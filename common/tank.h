@@ -24,6 +24,11 @@
 #define TANK_W 466
 #define TANK_H 466
 #endif
+#ifdef TANK_SQUARE              /* the 2.16 (Waveshare ESP32-S3-Touch-AMOLED-2.16, 2026-10-04): its 480 x 480 square glass,
+                                 * the rectangle's world a size up - the pages stay 448 x 368, centred */
+#define TANK_W 480
+#define TANK_H 480
+#endif
 #ifdef TANK_WATCH               /* the watch (Waveshare 2.06, 2026-10-02): its 410 x 502 glass as it is worn - a PORTRAIT tank
                                  * (Strato, with the first landscape picture on his wrist: "I have to turn my head") */
 #define TANK_W 410
@@ -146,6 +151,10 @@ typedef enum { VEG_KIND_GRASS, VEG_KIND_SWORD } veg_kind_t;
 #define ALGAE_CELL 18
 #define ALGAE_COLS 23
 #define ALGAE_ROWS 28
+#elif defined(TANK_SQUARE)                     /* the 2.16: 24 x 24 cells of 20 px - 576, inside the 644 the save keeps */
+#define ALGAE_CELL 20
+#define ALGAE_COLS 24
+#define ALGAE_ROWS 24
 #else
 #define ALGAE_CELL 16                          /* px per glass-film grid cell */
 #define ALGAE_COLS (TANK_W / ALGAE_CELL)       /* 28 */
@@ -159,6 +168,8 @@ typedef enum { VEG_KIND_GRASS, VEG_KIND_SWORD } veg_kind_t;
  * 1.8's pitch on every build (VEG_PAY_PX): the same cut, the same sand dollars. */
 #ifdef TANK_WATCH
 #define VEG_SEG_PX 4.3f
+#elif defined(TANK_SQUARE)                     /* 112 px taller than the 1.8: the tip at ~16 from y 464 */
+#define VEG_SEG_PX 4.2f
 #else
 #define VEG_SEG_PX 3.2f
 #endif

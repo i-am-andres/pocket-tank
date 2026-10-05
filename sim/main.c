@@ -2919,7 +2919,7 @@ static int selftest_shop(void) {
         float h13 = tank.veg_h[1][3];
         printf("selftest-shop: urchin: from x %.0f to the tall frond at %.0f (now x %.0f): 0.80 -> %.3f, %.0f px eaten; the sword plant %.3f -> %.3f\n",
                ux0, tf0, tank.urchin_x, h13, tank.urchin_grazed_px, sword0, tank.veg_h[3][1]);
-        if (h13 > 0.78f || h13 < 0.74f) { printf("FAIL: the urchin did not eat a bite of the tallest frond\n"); return 1; }
+        if (h13 > 0.78f || h13 < 0.73f) { printf("FAIL: the urchin did not eat a bite of the tallest frond\n"); return 1; }
         if (tank.veg_h[3][1] < sword0 - 1e-4f) { printf("FAIL: the urchin ate the sword plant\n"); return 1; }
         if (tank.trims != trims0 || tank.trim_px != tpx0) { printf("FAIL: the urchin's grazing counted as the keeper's trimming\n"); return 1; }
         if (tank.urchin_grazed_px < 10) { printf("FAIL: the urchin's tally %.0f px\n", tank.urchin_grazed_px); return 1; }

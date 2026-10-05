@@ -16,8 +16,8 @@
  * 90 degrees, centred in the glass (a black border, drawn once).
  *
  * And the 2.16 (BOARD_SQ216; CO5300, 480x480 SQUARE): the 1.75C's family with
- * its own resets and init, run down the round board's path - the 448x368
- * frame px for px, centred on the square (FULL; nothing is cropped). */
+ * its own resets and init, run down the round board's path - its own build's
+ * square tank (TANK_SQUARE) IS the panel, px for px (FULL, at 0, 0). */
 #include "display_port.h"
 #include "board_pins.h"
 #include "tank.h"
