@@ -281,7 +281,17 @@ bool touch_port_init(void) {
  * below the cross at the top left of the glass. A first sitting of 27, the
  * watch held in the hand and tapped with its thumb, sat 10 px left of these
  * (0.974 x + 5.7, 0.975 y + 14.7): the grip moves where a finger lands by
- * most of a millimeter, and a watch is used worn. */
+ * most of a millimeter, and a watch is used worn.
+ *
+ * The 2.16 (CST9220, the square tank), 2026-10-04: 18 presses on its 3 x 3
+ * (tools/touch_calib.py, two passes), the bias inside:
+ *
+ *   target x   48  240  432      reported   36  236  438   (rms 6.8 px)
+ *   target y   40  240  440      reported   38  245  450   (rms 5.8 px)
+ *
+ * reported = 1.046 x - 14.5 and 1.030 y - 2.9: like the 1.8 and the bowl
+ * it reads LARGE about the top left - a press by the left wall 12 px
+ * further left, one at the foot 10 px low. */
 #define CAL_X_GAIN 1.142f
 #define CAL_X_OFF  33.0f
 #define CAL_Y_GAIN 1.138f
@@ -292,6 +302,10 @@ bool touch_port_init(void) {
 #define CAL_W_X_OFF  (-14.8f)
 #define CAL_W_Y_GAIN 0.957f
 #define CAL_W_Y_OFF  (-13.5f)
+#define CAL_S_X_GAIN 1.046f
+#define CAL_S_X_OFF  14.5f
+#define CAL_S_Y_GAIN 1.030f
+#define CAL_S_Y_OFF  2.9f
 static void cal_point(float rx, float ry, float *tx, float *ty);
 /* an upright raw report -> the finger's point on the picture as shown: calibrated, then turned with the picture */
 static void cal_view(float rx, float ry, float *tx, float *ty) {
@@ -300,7 +314,7 @@ static void cal_view(float rx, float ry, float *tx, float *ty) {
 }
 static void cal_point(float rx, float ry, float *tx, float *ty) {                 /* a raw tank-space report -> where the finger is */
     ry -= s_inverted ? -s_bias_y : s_bias_y;          /* the finger's own low landing is the viewer's "down": turned, that is the panel's up */
-    if (board_is_sq216()) { }                       /* not measured yet: as the panel says */
+    if (board_is_sq216()) { rx = (rx + CAL_S_X_OFF) / CAL_S_X_GAIN; ry = (ry + CAL_S_Y_OFF) / CAL_S_Y_GAIN; }
     else if (board_is_round()) ry = (ry + CAL_R_Y_OFF) / CAL_R_Y_GAIN;
     else if (board_is_watch()) { rx = (rx + CAL_W_X_OFF) / CAL_W_X_GAIN; ry = (ry + CAL_W_Y_OFF) / CAL_W_Y_GAIN; }
     else if (board_is_v2()) { rx = (rx + CAL_X_OFF) / CAL_X_GAIN; ry = (ry + CAL_Y_OFF) / CAL_Y_GAIN; }
