@@ -461,24 +461,42 @@ static void sleep_button_poll(int64_t now) {
     }
 }
 
-/* IO18, the 2.16's third key (2026-10-04, the keeper's wish): a press feeds -
+/* IO18, the 2.16's third key (2026-10-04, the keeper's wishes): a TAP feeds -
  * three pellets at the keeper's usual spot (the tank remembers it), as a tap
- * on the surface would. Pulled up on the board, low while down; one feed per
- * press, at the press, and not more than one a second. No other board has
- * the key (the watch's GPIO 18 is its motor): the 2.16 only. */
+ * on the surface would - and a HOLD (0.6 s) is the light, as the double tap
+ * on the glass is: MANUAL toggles it, AUTO puts it out now or brings it back.
+ * So the feed comes at the release, once it is known not to be a hold. Pulled
+ * up on the board, low while down; not more than one feed a second. No other
+ * board has the key (the watch's GPIO 18 is its motor): the 2.16 only. */
 #define BTN_FEED GPIO_NUM_18
+#define BTN_HOLD_US 600000
 static void feed_button_poll(int64_t now) {
-    static bool armed, init; static int64_t low_since, last_feed;
+    static bool init, held_done; static int64_t low_since, last_feed;
     if (!board_is_sq216()) return;
     if (!init) {
         gpio_config_t k = { .pin_bit_mask = 1ULL << BTN_FEED, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE };
         gpio_config(&k); init = true;
+        if (!gpio_get_level(BTN_FEED)) held_done = true;   /* down at boot: wait for its release, it is nobody's press */
     }
-    if (gpio_get_level(BTN_FEED)) { armed = true; low_since = 0; return; }
-    if (!armed) return;                               /* held from before: wait for the release */
-    if (!low_since) { low_since = now; return; }
-    if (now - low_since < BTN_DEBOUNCE_US || now - last_feed < 1000000) return;
-    armed = false; last_feed = now;
+    if (!gpio_get_level(BTN_FEED)) {                       /* down */
+        if (!low_since) low_since = now;
+        if (!held_done && now - low_since >= BTN_HOLD_US) {  /* the hold: the light, once */
+            held_done = true;
+            if (!tank.light_auto) {
+                tank.light_manual_off = !tank.light_manual_off;
+                if (tank.light_manual_off) tank.light_tip_seen = true;
+            } else if (tank.night) tank_handled(&tank);    /* AUTO: a touch's worth of presence turns it on */
+            else tank.idle_s = (float)tank.light_idle_s + 1.0f;   /* ... or the idle rule's time is up now */
+            progression_settings_changed();
+            ESP_LOGI(TAG, "IO18 held: the light %s", tank.light_auto ? (tank.night ? "on" : "out") : tank.light_manual_off ? "out" : "on");
+        }
+        return;
+    }
+    /* up */
+    bool tap = low_since && !held_done && now - low_since >= BTN_DEBOUNCE_US;
+    low_since = 0; held_done = false;
+    if (!tap || now - last_feed < 1000000) return;
+    last_feed = now;
     float x = tank.feed_spot_x >= 0 ? tank.feed_spot_x : TANK_W * 0.5f;
     tank_feed(&tank, x, 3);
     ESP_LOGI(TAG, "IO18: feed at x %.0f", x);

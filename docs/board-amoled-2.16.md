@@ -63,8 +63,9 @@ grid is 24 x 24 cells of 20 px (576, inside the 644 the save keeps), fronds
   1.030 y - 2.9 (touch_port_ft3168.c). The panel calibration is undone
   upright, then the turn, then the finger's low-landing bias in the
   picture's own down.
-- **IO18** (the third key, no job on the other boards) feeds: three pellets
-  at the keeper's usual spot, one per press.
+- **IO18** (the third key, no job on the other boards): a TAP feeds - three pellets
+  at the keeper's usual spot, at the release - and a HOLD (0.6 s) is the light, as
+  the double tap on the glass is (MANUAL toggles it; AUTO puts it out or back on).
 - **The microSD keeps copies of the tank** (firmware/main/sd_backup.c):
   the NVS save blob, byte for byte, to `PTANK/SAVE.BIN` a minute after
   boot, every 3 h, and at every sleep and power-off, plus one dated copy a
