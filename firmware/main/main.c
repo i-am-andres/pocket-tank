@@ -458,6 +458,29 @@ static void sleep_button_poll(int64_t now) {
     }
 }
 
+/* IO18, the 2.16's third key (2026-10-04, the keeper's wish): a press feeds -
+ * three pellets at the keeper's usual spot (the tank remembers it), as a tap
+ * on the surface would. Pulled up on the board, low while down; one feed per
+ * press, at the press, and not more than one a second. No other board has
+ * the key (the watch's GPIO 18 is its motor): the 2.16 only. */
+#define BTN_FEED GPIO_NUM_18
+static void feed_button_poll(int64_t now) {
+    static bool armed, init; static int64_t low_since, last_feed;
+    if (!board_is_sq216()) return;
+    if (!init) {
+        gpio_config_t k = { .pin_bit_mask = 1ULL << BTN_FEED, .mode = GPIO_MODE_INPUT, .pull_up_en = GPIO_PULLUP_ENABLE };
+        gpio_config(&k); init = true;
+    }
+    if (gpio_get_level(BTN_FEED)) { armed = true; low_since = 0; return; }
+    if (!armed) return;                               /* held from before: wait for the release */
+    if (!low_since) { low_since = now; return; }
+    if (now - low_since < BTN_DEBOUNCE_US || now - last_feed < 1000000) return;
+    armed = false; last_feed = now;
+    float x = tank.feed_spot_x >= 0 ? tank.feed_spot_x : TANK_W * 0.5f;
+    tank_feed(&tank, x, 3);
+    ESP_LOGI(TAG, "IO18: feed at x %.0f", x);
+}
+
 /* the keeper said YES: every saved tank goes - the live one and a director-
  * parked copy alike - and a fresh pair of fry takes the glass, saved at once
  * so a reboot lands on them (progression_reset) */
@@ -593,6 +616,7 @@ static void tank_task(void *arg) {
         float dt = (now - last) / 1e6f; last = now; if (dt > 0.25f) dt = 0.25f;
         if (slept_from) sleep_us += now - slept_from;
         sleep_button_poll(now);
+        feed_button_poll(now);
         pwr_key_poll(now);
         imu_port_poll(now);
         if (imu_port_moving()) audio_port_prewarm();   /* in a hand: the codec stays warm (docs/AUDIO.md) */
