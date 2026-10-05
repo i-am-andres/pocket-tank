@@ -29,8 +29,8 @@ USB is not a power cycle.
 
 The 1.75C's family on a square panel: CO5300 over QSPI, CST9220 touch (the
 CST9217's protocol, I2C 0x5A), ES8311 + NS4150B speaker amp, ES7210 mic ADC
-(0x40, unused), AXP2101, QMI8658 (0x6B), PCF85063 RTC (0x51), an SD slot
-(unused). No IO expander: the resets are GPIOs. A3V3 (the codec and the
+(0x40, unused), AXP2101, QMI8658 (0x6B), PCF85063 RTC (0x51), a microSD
+slot (the tank's backups, below). No IO expander: the resets are GPIOs. A3V3 (the codec and the
 mic ADC) is ALDO1, as on the 1.75C; DSI_PWR_EN is pulled up to VCC3V3.
 
 | what | GPIO | | what | GPIO |
@@ -65,5 +65,16 @@ grid is 24 x 24 cells of 20 px (576, inside the 644 the save keeps), fronds
   picture's own down.
 - **IO18** (the third key, no job on the other boards) feeds: three pellets
   at the keeper's usual spot, one per press.
+- **The microSD keeps copies of the tank** (firmware/main/sd_backup.c):
+  the NVS save blob, byte for byte, to `PTANK/SAVE.BIN` a minute after
+  boot, every 3 h, and at every sleep and power-off, plus one dated copy a
+  day (`PTANK/Syymmdd.BIN`, the last 14 kept). A board that boots with NO
+  tank in NVS (a `--full` flash, an erased chip) brings the latest copy back
+  before the tank loads - never over a saved tank, so a reset stays a reset.
+  The card (FAT, SDMMC 1-bit: CLK 2, CMD 1, D0 3) is mounted only while a
+  copy is written. Director: `sd` (the copies), `sd backup`,
+  `sd restore [Syymmdd.BIN]` (then a restart). Bench, 2026-10-04: NVS erased
+  under a running tank, the next boot came back with the same fish.
+  Brightness and volume live in NVS on their own and are not on the card.
 - **Memory**: the frames are 460 KB each (PSRAM); the internal heap runs at
   ~37 KB free with the tank up (49 on the 1.8's frame).

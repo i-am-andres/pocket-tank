@@ -27,6 +27,7 @@ bool net_port_set_manifest_url(const char *url);
 #include "codec_port.h"
 #include "audio_port.h"
 #include "imu_port.h"
+#include "sd_backup.h"
 #include "audio.h"
 #include "notice.h"
 #include "esp_timer.h"
@@ -317,6 +318,11 @@ static void run(tank_t *t, char *line) {
         progression_slept(t, h * 3600.0f);      /* growth + the full-night badge, as a real wake would */
         ESP_LOGI(TAG, "slept %.1f h", h);
         show_state(t);
+    } else if (!strcmp(c, "sd")) {              /* the 2.16's card: sd (the copies) | sd backup | sd restore [Syymmdd.BIN] (then a restart) */
+        if (argc > 1 && !strcmp(argv[1], "backup")) sd_backup_now("director");
+        else if (argc > 1 && !strcmp(argv[1], "restore")) {
+            if (sd_backup_restore(argc > 2 ? argv[2] : NULL)) { ESP_LOGW(TAG, "restored: restarting into it"); vTaskDelay(pdMS_TO_TICKS(200)); esp_restart(); }
+        } else sd_backup_status();
     } else if (!strcmp(c, "rot")) {             /* the 2.16: rot <0-3> holds the picture so many quarter turns clockwise; rot auto = the IMU's */
         if (argc > 1) imu_port_force_rotation(!strcmp(argv[1], "auto") ? -1 : atoi(argv[1]));
         ESP_LOGI(TAG, "rot: %d quarter turn(s) clockwise", imu_port_rotation());

@@ -25,6 +25,7 @@
 #include "battery_port.h"
 #include "battery.h"
 #include "imu_port.h"
+#include "sd_backup.h"
 #include "director.h"
 #include "update.h"
 #include "update_mode.h"
@@ -291,6 +292,7 @@ static void enter_sleep_for(int wake_after_s) {
     if (!progression_save(&tank))               /* never cancels: a tank that can't save (NVS down, a save that
                                                    wouldn't load) must still sleep, or the key goes dead */
         ESP_LOGE(TAG, "sleep: the tank save failed - sleeping anyway, the last good save stands");
+    else sd_backup_now("sleep");                /* the 2.16: a copy on the card too */
     bat_hist_save();                            /* the screen-on time so far */
     snapshot_fish();
     audio_port_sleep();        /* amp low, codec down, rail off - before the rails cycle */
@@ -411,6 +413,7 @@ static void enter_poweroff(void) {
     touch_port_confirm_answer(-1);
     if (!progression_save(&tank))               /* never cancels (see enter_sleep_for) */
         ESP_LOGE(TAG, "power-off: the tank save failed - cutting anyway, the last good save stands");
+    else sd_backup_now("power-off");
     bat_hist_save();
     audio_port_sleep();
     batlog_add(battery_pct(), battery_port_vbat_mv(), display_port_brightness(), true, "off");   /* to NVS too: the shelf time is measurable at the next boot */
@@ -617,6 +620,7 @@ static void tank_task(void *arg) {
         if (slept_from) sleep_us += now - slept_from;
         sleep_button_poll(now);
         feed_button_poll(now);
+        sd_backup_poll(now);
         pwr_key_poll(now);
         imu_port_poll(now);
         if (imu_port_moving()) audio_port_prewarm();   /* in a hand: the codec stays warm (docs/AUDIO.md) */
@@ -982,6 +986,7 @@ void app_main(void) {
         int put_back = restore_fish();       /* where they fell asleep, on the goal they had */
         ESP_LOGI(TAG, "wake: %d of %d fish put back where they were", put_back, tank.n_fish);
     } else {                                 /* a cold boot - power-on, a flash, a PMIC power-off, a cell that died: the absence is lived through just the same (2026-09-16) */
+        sd_backup_restore_if_empty();        /* the 2.16: no tank in NVS (a --full flash) and a copy on the card - it comes back */
         float h = progression_boot(&tank);
         s_boot_lived_h = h;
         ESP_LOGI(TAG, "cold boot: %s%.1f h lived through since the save | hunger[0] %.1f | battery %d%% %d mV",
