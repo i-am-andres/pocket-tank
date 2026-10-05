@@ -489,7 +489,7 @@ void touch_port_poll(tank_t *t) {
         if (!setup_active()) {
             if (rename) ESP_LOGI(TAG, "rename closed: the fish is %s", who >= 0 && who < t->n_fish ? t->fish[who].name : "?");
             else if (birth) ESP_LOGI(TAG, "birth flow done: %s named and saved", who >= 0 && who < t->n_fish ? t->fish[who].name : "?");
-            else if (place >= 0) ESP_LOGI(TAG, "placed: %s at x %.0f, %s layer, saved", SD_ITEMS[place].name, tank_decor_x(t, place),
+            else if (place >= 0) ESP_LOGI(TAG, "placed: %s at x %.0f, %s layer, saved", sd_item_name(place), tank_decor_x(t, place),
                                           tank_decor_z(t, place) == DECOR_Z_BACK ? "BEHIND" : tank_decor_z(t, place) == DECOR_Z_FRONT ? "IN FRONT" : "AMONG");
             else ESP_LOGI(TAG, "setup done: %s + %s", t->fish[0].name, t->fish[1].name);
         }
@@ -511,7 +511,7 @@ void touch_port_poll(tank_t *t) {
     if (touched && !modal && !s_held_page && t->tool == TOOL_HAND && now - s_press_us > 700000 && fabsf(tx - s_px) < 24 && fabsf(ty - s_py) < 24) {
         int it = tank_decor_hit(t, s_px, s_py);
         if (it >= 0) { setup_begin_place(t, it); s_held_page = true; s_sel = -1;
-                       ESP_LOGI(TAG, "held on the %s: placement page up", SD_ITEMS[it].name); }
+                       ESP_LOGI(TAG, "held on the %s: placement page up", sd_item_name(it)); }
     }
     if (touched && !modal && !s_held_page && now - s_press_us > 300000 && fabsf(ty - s_py) < 30) tank_touch_hold(t, tx, ty);
     if (!touched && s_down) {

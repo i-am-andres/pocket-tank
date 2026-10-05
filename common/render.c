@@ -8,6 +8,7 @@
 #include "tank_events.h"
 #include "setup.h"
 #include "version.h"
+#include "lang.h"
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
@@ -2290,7 +2291,7 @@ static void card_draw(ctx_t c, const tank_t *t, int fish_idx) {
        milestones page (and from there SETTINGS / UPGRADES), but nothing said
        so - a keeper asked Strato how to get there. The button is the sign;
        the hit box is still the card (touch ports, RENDER_CARD_H). */
-    button(&c, X + 8, Y + H - 8 - CARD_MORE_H, W - 16, CARD_MORE_H, 0x1c2f36, 0x9fd8e2, "MÁS", 2);
+    button(&c, X + 8, Y + H - 8 - CARD_MORE_H, W - 16, CARD_MORE_H, 0x1c2f36, 0x9fd8e2, TR("MORE", "MÁS"), 2);
 }
 
 /* ---- stats card cache (2026-09-01) ----
@@ -2321,12 +2322,12 @@ static void snail_card_draw(ctx_t *c, const tank_t *t) {
     rect_edge(c, X, Y, W, H, 0x9fd8e2); rect_edge(c, X + 1, Y + 1, W - 2, H - 2, 0x1c2f36);
     const icon_t *ic = &icon_snail_upright;
     blit_icon_scaled(c, X + (W - ic->w * 2) / 2, Y + 10, ic, 2, true);
-    draw_text(c, X + (W - text_w("CARACOL", 3)) / 2, Y + 82, 3, 0xffffff, "CARACOL");
-    const char *cap = "ALGAS COMIDAS HASTA AHORA";
+    draw_text(c, X + (W - text_w(TR("SNAIL", "CARACOL"), 3)) / 2, Y + 82, 3, 0xffffff, TR("SNAIL", "CARACOL"));
+    const char *cap = TR("ALGAE GRAZED SO FAR", "ALGAS COMIDAS HASTA AHORA");
     draw_text(c, X + (W - text_w(cap, 2)) / 2, Y + 112, 2, 0x9fd8e2, cap);
     char n[24];
-    if (t->snail_grazed <= 0) snprintf(n, sizeof n, "NADA AÚN");
-    else snprintf(n, sizeof n, "%d MANCHA%s", (int)t->snail_grazed, t->snail_grazed == 1 ? "" : "S");
+    if (t->snail_grazed <= 0) snprintf(n, sizeof n, TR("NOTHING YET", "NADA AÚN"));
+    else snprintf(n, sizeof n, TR("%d SPOT%s", "%d MANCHA%s"), (int)t->snail_grazed, t->snail_grazed == 1 ? "" : "S");
     draw_text(c, X + (W - text_w(n, 3)) / 2, Y + 134, 3, 0xffffff, n);
 }
 
@@ -2348,16 +2349,16 @@ static void urchin_card_draw(ctx_t *c, const tank_t *t) {
             src_t sc = src_color(URCHIN_RGB[tone], 1.0f);
             for (int yy = 0; yy < S; yy++) span(c, ox + lx * S, ox + lx * S + S - 1, oy + ly * S + yy, &sc, 255);
         }
-    draw_text(c, X + (W - text_w("ERIZO DE MAR", 3)) / 2, Y + 90, 3, 0xffffff, "ERIZO DE MAR");
-    const char *cap = "HIERBA COMIDA HASTA AHORA";
+    draw_text(c, X + (W - text_w(TR("SEA URCHIN", "ERIZO DE MAR"), 3)) / 2, Y + 90, 3, 0xffffff, TR("SEA URCHIN", "ERIZO DE MAR"));
+    const char *cap = TR("GRASS GRAZED SO FAR", "HIERBA COMIDA HASTA AHORA");
     draw_text(c, X + (W - text_w(cap, 2)) / 2, Y + 118, 2, 0x9fd8e2, cap);
     char n[24]; int cm = (int)(t->urchin_grazed_px / PX_PER_CM);
-    if (cm < 1) snprintf(n, sizeof n, "NADA AÚN");
+    if (cm < 1) snprintf(n, sizeof n, TR("NOTHING YET", "NADA AÚN"));
     else snprintf(n, sizeof n, "%d CM", cm);
     draw_text(c, X + (W - text_w(n, 3)) / 2, Y + 140, 3, 0xffffff, n);
-    const char *now = tank_urchin_chewing(t) ? "MASTICANDO"
-                    : t->urchin_frond >= 0 ? "RUMBO A LA HIERBA ALTA"
-                    : "DESCANSANDO";
+    const char *now = tank_urchin_chewing(t) ? TR("CHEWING", "MASTICANDO")
+                    : t->urchin_frond >= 0 ? TR("OFF TO THE TALL GRASS", "RUMBO A LA HIERBA ALTA")
+                    : TR("RESTING", "DESCANSANDO");
     draw_text(c, X + (W - text_w(now, 2)) / 2, Y + 170, 2, 0x9fd8e2, now);
 }
 
@@ -2388,11 +2389,13 @@ static void shrimp_card_draw(ctx_t *c, const tank_t *t) {
             for (int yy = 0; yy < S; yy++) span(c, sx + x * S, sx + x * S + S - 1, sy + y * S + yy, &pal[ti], SHRIMP_ALPHA[ti]);
         }
     char line[32];
-    snprintf(line, sizeof line, "%d %s", n, n == 1 ? "CAMARÓN" : "CAMARONES");
+    if (pt_lang == LANG_ES) snprintf(line, sizeof line, "%d %s", n, n == 1 ? "CAMARÓN" : "CAMARONES");
+    else snprintf(line, sizeof line, "%d SHRIMP", n);
     draw_text(c, X + (W - text_w(line, 3)) / 2, Y + 46, 3, 0xffffff, line);
-    snprintf(line, sizeof line, "%d BOLITA%s COMIDA%s", (int)t->shrimp_eaten, t->shrimp_eaten == 1 ? "" : "S", t->shrimp_eaten == 1 ? "" : "S");
+    if (pt_lang == LANG_ES) snprintf(line, sizeof line, "%d BOLITA%s COMIDA%s", (int)t->shrimp_eaten, t->shrimp_eaten == 1 ? "" : "S", t->shrimp_eaten == 1 ? "" : "S");
+    else snprintf(line, sizeof line, "%d PELLET%s EATEN", (int)t->shrimp_eaten, t->shrimp_eaten == 1 ? "" : "S");
     draw_text(c, X + (W - text_w(line, 2)) / 2, Y + 76, 2, 0x9fd8e2, line);
-    const char *cap = "PRÓXIMO CAMARÓN";
+    const char *cap = TR("NEXT SHRIMP", "PRÓXIMO CAMARÓN");
     draw_text(c, X + (W - text_w(cap, 2)) / 2, Y + 104, 2, 0x9fd8e2, cap);
     bool full = n >= SHRIMP_MAX;
     int have = full ? SHRIMP_PER_JOIN : t->shrimp_food;
@@ -2404,14 +2407,15 @@ static void shrimp_card_draw(ctx_t *c, const tank_t *t) {
             fill_ellipse(c, x - 2, py - 2, 2.2f, 2.2f, 0xffe9bd, 255);
         } else ring(c, x, py, 6, 0x5a6a6e);
     }
-    if (full) snprintf(line, sizeof line, "EL CARDUMEN ESTÁ COMPLETO");
-    else if (tank_shrimp_refusing(t)) snprintf(line, sizeof line, "MUCHAS ALGAS: NO COMEN");
+    if (full) snprintf(line, sizeof line, TR("THE SCHOOL IS FULL", "EL CARDUMEN ESTÁ COMPLETO"));
+    else if (tank_shrimp_refusing(t)) snprintf(line, sizeof line, TR("TOO MUCH ALGAE TO EAT", "MUCHAS ALGAS: NO COMEN"));
     else if (t->shrimp_food >= SHRIMP_PER_JOIN && t->shrimp_cool > 0) {
         int m = (int)ceilf(t->shrimp_cool / 60.0f);
-        snprintf(line, sizeof line, "LLEGA EN %d MIN", m < 1 ? 1 : m);
+        snprintf(line, sizeof line, TR("ARRIVES IN %d MIN", "LLEGA EN %d MIN"), m < 1 ? 1 : m);
     } else {
         int more = SHRIMP_PER_JOIN - t->shrimp_food;
-        snprintf(line, sizeof line, "FALTA%s %d BOLITA%s", more == 1 ? "" : "N", more, more == 1 ? "" : "S");
+        if (pt_lang == LANG_ES) snprintf(line, sizeof line, "FALTA%s %d BOLITA%s", more == 1 ? "" : "N", more, more == 1 ? "" : "S");
+        else snprintf(line, sizeof line, "%d MORE PELLET%s", more, more == 1 ? "" : "S");
     }
     draw_text(c, X + (W - text_w(line, 2)) / 2, Y + 158, 2, 0xffffff, line);
 }
@@ -2506,7 +2510,7 @@ int render_tools_hit(float x, float y) {
 #define TOOL_CHIP_Y RENDER_CARD_Y
 #endif
 #define TOOL_CHIP_H 40
-static int tool_chip_w(void) { return 8 + 24 + 8 + text_w("LISTO", 2) + 10; }
+static int tool_chip_w(void) { return 8 + 24 + 8 + text_w(TR("DONE", "LISTO"), 2) + 10; }
 void render_tool_chip(const tank_t *t, int fish_idx, uint16_t *fb, int stride) {
     if (t->tool == TOOL_HAND || (fish_idx >= 0 && fish_idx < t->n_fish)) return;
     ctx_t c = ctx_full(fb, stride, 1.0f);
@@ -2515,7 +2519,7 @@ void render_tool_chip(const tank_t *t, int fish_idx, uint16_t *fb, int stride) {
     rect_edge(&c, X, Y, W, H, 0xffffff); rect_edge(&c, X + 1, Y + 1, W - 2, H - 2, 0x9fd8e2);
     const icon_t *ic = t->tool == TOOL_SCISSORS ? &icon_tool_scissors : &icon_tool_sponge;
     blit_icon(&c, X + 8, Y + (H - ic->h) / 2, ic, 255);
-    draw_text(&c, X + 8 + ic->w + 8, Y + (H - 14) / 2, 2, 0xffffff, "LISTO");
+    draw_text(&c, X + 8 + ic->w + 8, Y + (H - 14) / 2, 2, 0xffffff, TR("DONE", "LISTO"));
 }
 bool render_tool_chip_hit(const tank_t *t, float x, float y) {
     return t->tool != TOOL_HAND && x < TOOL_CHIP_X + tool_chip_w() + 16 && y < TOOL_CHIP_Y + TOOL_CHIP_H + 24;
@@ -2726,14 +2730,14 @@ void render_confirm_reset(uint16_t *fb, int stride, float frac) {
     const int X = RENDER_CONFIRM_X, Y = RENDER_CONFIRM_Y, W = RENDER_CONFIRM_W, H = RENDER_CONFIRM_H;
     rect_fill(&c, X, Y, W, H, 0x04141a);
     rect_edge(&c, X, Y, W, H, 0x9fd8e2); rect_edge(&c, X + 1, Y + 1, W - 2, H - 2, 0x1c2f36);
-    const char *title = "¿REINICIAR PECERA?";
+    const char *title = TR("RESET TANK?", "¿REINICIAR PECERA?");
     draw_text(&c, X + (W - text_w(title, 3)) / 2, Y + 20, 3, 0xffffff, title);
-    const char *l1 = "EMPEZAR CON DOS ALEVINES", *l2 = "TODO LO DEMÁS SE PIERDE";
+    const char *l1 = TR("START OVER WITH TWO FRY", "EMPEZAR CON DOS ALEVINES"), *l2 = TR("EVERYTHING ELSE IS LOST", "TODO LO DEMÁS SE PIERDE");
     draw_text(&c, X + (W - text_w(l1, 2)) / 2, Y + 58, 2, 0x9fd8e2, l1);
     draw_text(&c, X + (W - text_w(l2, 2)) / 2, Y + 78, 2, 0x9fd8e2, l2);
     /* NO is the calm one; YES wears the stress red */
     button(&c, RENDER_CONFIRM_NO_X,  RENDER_CONFIRM_BTN_Y, RENDER_CONFIRM_BTN_W, RENDER_CONFIRM_BTN_H, 0x1c2f36, 0x9fd8e2, "NO", 3);
-    button(&c, RENDER_CONFIRM_YES_X, RENDER_CONFIRM_BTN_Y, RENDER_CONFIRM_BTN_W, RENDER_CONFIRM_BTN_H, 0x7a2028, 0xf25b65, "SÍ", 3);
+    button(&c, RENDER_CONFIRM_YES_X, RENDER_CONFIRM_BTN_Y, RENDER_CONFIRM_BTN_W, RENDER_CONFIRM_BTN_H, 0x7a2028, 0xf25b65, TR("YES", "SÍ"), 3);
     /* the prompt lets itself go: a bar draining toward the timeout */
     if (frac < 0) frac = 0;
     if (frac > 1) frac = 1;
@@ -2762,17 +2766,17 @@ void render_battery_info(uint16_t *fb, int stride, const bat_info_t *bi, float c
     bool pw = BAT_ON_POWER(bi->state);
     char lab[3][24], val[3][32], d[16]; int nr = 0;
     if (bi->since_min >= 0) {
-        snprintf(lab[nr], sizeof lab[nr], pw ? "CONECTADA" : "DESCONECTADA");
-        if (bi->since_min < 1) snprintf(val[nr], sizeof val[nr], "AHORA MISMO");
-        else { battery_fmt_dur(d, sizeof d, bi->since_min); snprintf(val[nr], sizeof val[nr], "HACE %s", d); }
+        snprintf(lab[nr], sizeof lab[nr], pw ? TR("PLUGGED IN", "CONECTADA") : TR("UNPLUGGED", "DESCONECTADA"));
+        if (bi->since_min < 1) snprintf(val[nr], sizeof val[nr], TR("JUST NOW", "AHORA MISMO"));
+        else { battery_fmt_dur(d, sizeof d, bi->since_min); snprintf(val[nr], sizeof val[nr], TR("%s AGO", "HACE %s"), d); }
         nr++;
     }
     if (!pw && bi->awake_min >= 0) {
-        snprintf(lab[nr], sizeof lab[nr], "PANTALLA ACTIVA");
+        snprintf(lab[nr], sizeof lab[nr], TR("SCREEN ON", "PANTALLA ACTIVA"));
         battery_fmt_dur(val[nr], sizeof val[nr], bi->awake_min); nr++;
     }
     if (bi->life_min > 0) {
-        snprintf(lab[nr], sizeof lab[nr], "AUTONOMÍA");
+        snprintf(lab[nr], sizeof lab[nr], TR("BATTERY LIFE", "AUTONOMÍA"));
         battery_fmt_dur(d, sizeof d, bi->life_min); snprintf(val[nr], sizeof val[nr], "~%s", d); nr++;
     }
     const int W = 336, H = (bi->mv > 0 ? 170 : 154) + nr * 26, X = (TANK_W - W) / 2, Y = (TANK_H - H) / 2;
@@ -2787,15 +2791,15 @@ void render_battery_info(uint16_t *fb, int stride, const bat_info_t *bi, float c
     draw_battery(&c, gx + bolt, gy, BW, BH, 2, bi->pct / 100.0f, bi->state, clock);
     draw_text(&c, gx + bolt + BW + 6 + 20, gy + (BH - 7 * TS) / 2, TS, 0xffffff, pct);
     /* the state, then what it means in time */
-    const char *st = bi->state == BAT_CHARGING ? "CARGANDO" : bi->state == BAT_FULL ? "CARGA COMPLETA"
-                   : bi->state == BAT_PLUGGED ? "CONECTADA" : "CON BATERÍA";
+    const char *st = bi->state == BAT_CHARGING ? TR("CHARGING", "CARGANDO") : bi->state == BAT_FULL ? TR("FULLY CHARGED", "CARGA COMPLETA")
+                   : bi->state == BAT_PLUGGED ? TR("PLUGGED IN", "CONECTADA") : TR("ON BATTERY", "CON BATERÍA");
     draw_text(&c, X + (W - text_w(st, 3)) / 2, Y + 78, 3, 0xffffff, st);
     char est[48];
-    if (bi->state == BAT_CHARGING) { battery_fmt_dur(d, sizeof d, bi->left_min); snprintf(est, sizeof est, "LLENA EN APROX. %s", d); }
-    else if (bi->state == BAT_FULL) snprintf(est, sizeof est, "LISTA PARA DESCONECTAR");
-    else if (bi->state == BAT_PLUGGED) snprintf(est, sizeof est, "NO ESTÁ CARGANDO AHORA");
-    else if (bi->left_min < 5) snprintf(est, sizeof est, "CASI VACÍA");
-    else { battery_fmt_dur(d, sizeof d, bi->left_min); snprintf(est, sizeof est, "QUEDAN APROX. %s", d); }
+    if (bi->state == BAT_CHARGING) { battery_fmt_dur(d, sizeof d, bi->left_min); snprintf(est, sizeof est, TR("FULL IN ABOUT %s", "LLENA EN APROX. %s"), d); }
+    else if (bi->state == BAT_FULL) snprintf(est, sizeof est, TR("READY TO UNPLUG", "LISTA PARA DESCONECTAR"));
+    else if (bi->state == BAT_PLUGGED) snprintf(est, sizeof est, TR("NOT CHARGING RIGHT NOW", "NO ESTÁ CARGANDO AHORA"));
+    else if (bi->left_min < 5) snprintf(est, sizeof est, TR("ALMOST EMPTY", "CASI VACÍA"));
+    else { battery_fmt_dur(d, sizeof d, bi->left_min); snprintf(est, sizeof est, TR("ABOUT %s LEFT", "QUEDAN APROX. %s"), d); }
     draw_text(&c, X + (W - text_w(est, 2)) / 2, Y + 110, 2, 0x9fd8e2, est);
     rect_fill(&c, X + 20, Y + 138, W - 40, 1, 0x1c2f36);
     for (int i = 0; i < nr; i++) {
@@ -2868,7 +2872,9 @@ static const badge_t *tank_badge(const tank_t *t, int k) {
     return &TANK_BADGES[0];
 }
 static int tank_pages(const tank_t *t) { return (tank_badge_n(t) + MSP_PER_ROW - 1) / MSP_PER_ROW; }
-static const char *const STAGE_WORDS[4] = { "ALEVÍN", "JUVENIL", "ADULTO", "MAYOR" };
+static const char *const STAGE_WORDS_EN[4] = { "FRY", "JUVENILE", "ADULT", "ELDER" },
+                         *const STAGE_WORDS_ES[4] = { "ALEVÍN", "JUVENIL", "ADULTO", "MAYOR" };
+#define STAGE_WORD(st) ((pt_lang == LANG_ES ? STAGE_WORDS_ES : STAGE_WORDS_EN)[(st) & 3])
 /* the detail modal (a tap on a badge / name / strip): what to show until
  * the next tap. caption[0] == 0 means no modal. */
 static char g_ms_caption[72], g_ms_title[16];
@@ -3066,7 +3072,7 @@ void render_milestones(const tank_t *t, uint16_t *fb, int stride) {
         int top = MSP_ROW_Y0 + t->n_fish * MSP_ROW_H;
         uint32_t fry_rgb = staged ? MSP_TEAL : MSP_DIM;
         render_fish_preview(fb, stride, MSP_FISH_X, top + MSP_ROW_MID, 0.55f, fry_rgb, fry_rgb, fry_rgb, t->clock);
-        draw_text(&c, 92, top + 2, 2, MSP_TEAL, "ALEVÍN");
+        draw_text(&c, 92, top + 2, 2, MSP_TEAL, TR("NEW FRY", "ALEVÍN"));
         for (int k = 0; k < nreq; k++)           /* one tick per gate, lit when met */
             rect_fill(&c, 96 + k * 14, top + MSP_ROW_STRIP - 3, 10, 6, req[k].met ? MSP_TEAL : MSP_DIM);
         for (int k = 0; k < nreq; k++) {
@@ -3088,7 +3094,7 @@ void render_milestones(const tank_t *t, uint16_t *fb, int stride) {
         char bal[16]; snprintf(bal, sizeof bal, "%d", (int)t->sd_balance);
         draw_text(&c, MSP_SD_X + (MSP_ICON - text_w(bal, 2)) / 2, MSP_TANK_Y + 34, 2, 0xffffff, bal);
     }
-    draw_text(&c, 92, MSP_TANK_Y + 2, 2, MSP_TEAL, "PECERA");
+    draw_text(&c, 92, MSP_TANK_Y + 2, 2, MSP_TEAL, TR("TANK", "PECERA"));
     for (int k = 0; k < POP_CAP; k++)        /* population strip: who is here, who could still arrive */
         fish_glyph(&c, 96 + k * 14, MSP_TANK_Y + 30, 2.8f, k < t->n_fish ? MSP_TEAL : MSP_DIM);
     int nb = tank_badge_n(t), np = tank_pages(t);
@@ -3114,9 +3120,9 @@ void render_milestones(const tank_t *t, uint16_t *fb, int stride) {
     }
     /* the way out: a CLOSE button in the prompt's calm dress (a tap anywhere
        else never drops the page - too much to tap for that) */
-    button(&c, MSP_CLOSE_X, MSP_CLOSE_Y, MSP_CLOSE_W, MSP_CLOSE_H, 0x1c2f36, MSP_TEAL, "CERRAR", 2);
-    button(&c, MSP_SET_X, MSP_SET_Y, MSP_SET_W, MSP_CLOSE_H, 0x1c2f36, MSP_TEAL, "AJUSTES", 2);   /* bottom left (2026-09-15) */
-    button(&c, MSP_UPG_X, MSP_CLOSE_Y, MSP_UPG_W, MSP_CLOSE_H, 0x1c2f36, MSP_TEAL, "TIENDA", 2);   /* the shop, between them */
+    button(&c, MSP_CLOSE_X, MSP_CLOSE_Y, MSP_CLOSE_W, MSP_CLOSE_H, 0x1c2f36, MSP_TEAL, TR("CLOSE", "CERRAR"), 2);
+    button(&c, MSP_SET_X, MSP_SET_Y, MSP_SET_W, MSP_CLOSE_H, 0x1c2f36, MSP_TEAL, TR("SETTINGS", "AJUSTES"), 2);   /* bottom left (2026-09-15) */
+    button(&c, MSP_UPG_X, MSP_CLOSE_Y, MSP_UPG_W, MSP_CLOSE_H, 0x1c2f36, MSP_TEAL, TR("UPGRADES", "TIENDA"), 2);   /* the shop, between them */
     /* a modal up: the page under it is out of reach (any tap only closes the
        modal), so it LOOKS out of reach - every pixel at half (Strato: with
        CLOSE lit it looked like you could still tap it). One shift per
@@ -3134,7 +3140,7 @@ void render_milestones(const tank_t *t, uint16_t *fb, int stride) {
         const int H = 56 + n * 20 + 16;
         rect_fill(&c, X, Y, W, H, 0x04141a);
         rect_edge(&c, X, Y, W, H, MSP_TEAL); rect_edge(&c, X + 1, Y + 1, W - 2, H - 2, 0x1c2f36);
-        char title[24]; snprintf(title, sizeof title, "%s: CÓMO", g_ms_title);
+        char title[24]; snprintf(title, sizeof title, TR("%s: HOW", "%s: CÓMO"), g_ms_title);
         draw_text(&c, X + (W - text_w(title, 3)) / 2, Y + 16, 3, 0xffffff, title);
         for (int i = 0; i < n; i++) draw_text(&c, X + (W - text_w(tip[i], 2)) / 2, Y + 56 + i * 20, 2, MSP_TEAL, tip[i]);
     } else if (g_ms_caption[0]) {
@@ -3148,28 +3154,28 @@ void render_milestones(const tank_t *t, uint16_t *fb, int stride) {
             int worth = progression_fish_value(t, g_ms_row);
             if (!can) g_ms_sell_armed = false; else g_ms_sell_asked = false;
             snprintf(g_ms_title, sizeof g_ms_title, "%s", f->name);
-            snprintf(g_ms_caption, sizeof g_ms_caption, "%s", STAGE_WORDS[f->stage & 3]);
-            if (g_ms_sell_armed) snprintf(g_ms_sub, sizeof g_ms_sub, "TOCA OTRA VEZ PARA VENDER");
-            else if (can) snprintf(g_ms_sub, sizeof g_ms_sub, "VALE %d DÓLARES DE ARENA", worth);
-            else if (g_ms_sell_asked) snprintf(g_ms_sub, sizeof g_ms_sub, t->n_fish <= FISH_KEEP_MIN ? "DEBEN QUEDAR DOS PECES" : "PRIMERO NOMBRA AL ALEVÍN");
+            snprintf(g_ms_caption, sizeof g_ms_caption, "%s", STAGE_WORD(f->stage));
+            if (g_ms_sell_armed) snprintf(g_ms_sub, sizeof g_ms_sub, TR("TAP AGAIN TO SELL", "TOCA OTRA VEZ PARA VENDER"));
+            else if (can) snprintf(g_ms_sub, sizeof g_ms_sub, TR("WORTH %d SAND DOLLARS", "VALE %d DÓLARES DE ARENA"), worth);
+            else if (g_ms_sell_asked) snprintf(g_ms_sub, sizeof g_ms_sub, t->n_fish <= FISH_KEEP_MIN ? TR("KEEP AT LEAST TWO FISH", "DEBEN QUEDAR DOS PECES") : TR("NAME THE NEW FRY FIRST", "PRIMERO NOMBRA AL ALEVÍN"));
             else g_ms_sub[0] = 0;                  /* (the line's room stays: the buttons never move) */
         }
         rect_fill(&c, X, Y, W, H, 0x04141a);
         rect_edge(&c, X, Y, W, H, MSP_TEAL); rect_edge(&c, X + 1, Y + 1, W - 2, H - 2, 0x1c2f36);
         if (g_ms_kind >= 0)                        /* the way further in: HOW?, centred at the foot (Strato: bottom
                                                       right sat too close to CLOSE for comfort) */
-            button(&c, X + (W - MSP_HOW_W) / 2, Y + H - 10 - MSP_HOW_H, MSP_HOW_W, MSP_HOW_H, 0x1c2f36, MSP_TEAL, "¿CÓMO?", 2);
+            button(&c, X + (W - MSP_HOW_W) / 2, Y + H - 10 - MSP_HOW_H, MSP_HOW_W, MSP_HOW_H, 0x1c2f36, MSP_TEAL, TR("HOW?", "¿CÓMO?"), 2);
         if (card) {
             const int by = ms_card_btn_y(t);
-            button(&c, ms_card_btn_x(0), by, MSP_CARD_BTN_W, MSP_HOW_H, 0x1c2f36, MSP_TEAL, "RENOMBRAR", 2);
+            button(&c, ms_card_btn_x(0), by, MSP_CARD_BTN_W, MSP_HOW_H, 0x1c2f36, MSP_TEAL, TR("RENAME", "RENOMBRAR"), 2);
             if (!progression_fish_sellable(t, g_ms_row)) {           /* not for sale: the button in the page's dim ink, the words too */
                 rect_fill(&c, ms_card_btn_x(1), by, MSP_CARD_BTN_W, MSP_HOW_H, 0x04141a);
                 rect_edge(&c, ms_card_btn_x(1), by, MSP_CARD_BTN_W, MSP_HOW_H, MSP_DIM);
-                draw_text(&c, ms_card_btn_x(1) + (MSP_CARD_BTN_W - text_w("VENDER", 2)) / 2, by + (MSP_HOW_H - 14) / 2, 2, MSP_DIM, "VENDER");
+                draw_text(&c, ms_card_btn_x(1) + (MSP_CARD_BTN_W - text_w(TR("SELL", "VENDER"), 2)) / 2, by + (MSP_HOW_H - 14) / 2, 2, MSP_DIM, TR("SELL", "VENDER"));
             } else if (g_ms_sell_armed) {
-                char ok[16]; snprintf(ok, sizeof ok, "+%d ¿OK?", progression_fish_value(t, g_ms_row));
+                char ok[16]; snprintf(ok, sizeof ok, TR("+%d OK?", "+%d ¿OK?"), progression_fish_value(t, g_ms_row));
                 button(&c, ms_card_btn_x(1), by, MSP_CARD_BTN_W, MSP_HOW_H, 0x155e58, 0x38dcc7, ok, 2);
-            } else button(&c, ms_card_btn_x(1), by, MSP_CARD_BTN_W, MSP_HOW_H, 0x1c2f36, MSP_TEAL, "VENDER", 2);
+            } else button(&c, ms_card_btn_x(1), by, MSP_CARD_BTN_W, MSP_HOW_H, 0x1c2f36, MSP_TEAL, TR("SELL", "VENDER"), 2);
         }
         if (g_ms_icon) blit_icon_scaled(&c, X + (W - g_ms_icon->w * 2) / 2, Y + 16 + (32 - g_ms_icon->w), g_ms_icon, 2, g_ms_lit);
         else if (g_ms_fish >= 0 && g_ms_fish < t->n_fish) {
@@ -3274,13 +3280,13 @@ static int ms_open(const tank_t *t, int row, bool tank_row, bool fry_row, int k,
     if (fry_row) {
         if (k < 0) {                                 /* the name: the tally, and when it comes */
             int met = 0; for (int i = 0; i < nreq; i++) met += req[i].met;
-            snprintf(g_ms_title, sizeof g_ms_title, "NUEVO ALEVÍN");
-            if (staged) { snprintf(g_ms_caption, sizeof g_ms_caption, "TODO ESTÁ LISTO. UN ALEVÍN");   /* the spawning, 2026-09-24 */
-                          snprintf(g_ms_caption2, sizeof g_ms_caption2, "NACERÁ EN LA HIERBA");
-                          snprintf(g_ms_sub, sizeof g_ms_sub, "EN CAMINO"); }
-            else { snprintf(g_ms_caption, sizeof g_ms_caption, "CUANDO SE CUMPLA TODO,");     /* Strato's words, 2026-09-14 */
-                   snprintf(g_ms_caption2, sizeof g_ms_caption2, "NACERÁ UN NUEVO ALEVÍN");
-                   snprintf(g_ms_sub, sizeof g_ms_sub, "%d DE %d LISTOS", met, nreq); }
+            snprintf(g_ms_title, sizeof g_ms_title, TR("NEW FRY", "NUEVO ALEVÍN"));
+            if (staged) { snprintf(g_ms_caption, sizeof g_ms_caption, TR("EVERY STEP IS DONE. A FRY", "TODO ESTÁ LISTO. UN ALEVÍN"));   /* the spawning, 2026-09-24 */
+                          snprintf(g_ms_caption2, sizeof g_ms_caption2, TR("WILL BE BORN IN THE GRASS", "NACERÁ EN LA HIERBA"));
+                          snprintf(g_ms_sub, sizeof g_ms_sub, TR("ON ITS WAY", "EN CAMINO")); }
+            else { snprintf(g_ms_caption, sizeof g_ms_caption, TR("WHEN ALL NEEDS ARE MET, A", "CUANDO SE CUMPLA TODO,"));     /* Strato's words, 2026-09-14 */
+                   snprintf(g_ms_caption2, sizeof g_ms_caption2, TR("NEW FRY IS READY TO BE BORN", "NACERÁ UN NUEVO ALEVÍN"));
+                   snprintf(g_ms_sub, sizeof g_ms_sub, TR("%d OF %d DONE", "%d DE %d LISTOS"), met, nreq); }
             g_ms_lit = staged; g_ms_icon = NULL; g_ms_fish = -1; g_ms_fry = true;
         } else if (k < nreq) {                       /* a gate: the words, and where it stands */
             const fry_req_t *r = &req[k];
@@ -3293,26 +3299,26 @@ static int ms_open(const tank_t *t, int row, bool tank_row, bool fry_row, int k,
         } else return MS_TAP_NONE;
     } else if (tank_row) {
         if (k < 0) {
-            snprintf(g_ms_title, sizeof g_ms_title, "PECERA");
-            snprintf(g_ms_caption, sizeof g_ms_caption, "%d DE %d PECES HASTA AHORA", t->n_fish, POP_CAP);
+            snprintf(g_ms_title, sizeof g_ms_title, TR("TANK", "PECERA"));
+            snprintf(g_ms_caption, sizeof g_ms_caption, TR("%d OF %d FISH SO FAR", "%d DE %d PECES HASTA AHORA"), t->n_fish, POP_CAP);
             g_ms_lit = true; g_ms_icon = NULL; g_ms_fish = -1;
         } else {
             uint32_t bit = tank_badge(t, k)->bit; bool on = (t->tank_ms_bits & bit) != 0;
             g_ms_tpage = k / MSP_PER_ROW;            /* the arrows can cross pages: the row follows */
-            snprintf(g_ms_title, sizeof g_ms_title, on ? "PECERA" : "AÚN NO");
-            snprintf(g_ms_caption, sizeof g_ms_caption, "%s", TMS_NAMES[bit_index(bit)]);
+            snprintf(g_ms_title, sizeof g_ms_title, on ? TR("TANK", "PECERA") : TR("NOT YET", "AÚN NO"));
+            snprintf(g_ms_caption, sizeof g_ms_caption, "%s", progression_tms_name(bit_index(bit)));
             g_ms_lit = on; g_ms_icon = tank_badge(t, k)->icon; g_ms_fish = -1;
         }
     } else {
         const fish_t *f = &t->fish[row];
         if (k < 0) {
             snprintf(g_ms_title, sizeof g_ms_title, "%s", f->name);
-            snprintf(g_ms_caption, sizeof g_ms_caption, "%s", STAGE_WORDS[f->stage & 3]);
+            snprintf(g_ms_caption, sizeof g_ms_caption, "%s", STAGE_WORD(f->stage));
             g_ms_lit = true; g_ms_icon = NULL; g_ms_fish = row;
         } else {
             uint32_t bit = FISH_BADGES[k].bit; bool on = (f->ms_bits & bit) != 0;
-            snprintf(g_ms_title, sizeof g_ms_title, "%s", on ? f->name : "AÚN NO");
-            snprintf(g_ms_caption, sizeof g_ms_caption, "%s", MS_NAMES[bit_index(bit)]);
+            snprintf(g_ms_title, sizeof g_ms_title, "%s", on ? f->name : TR("NOT YET", "AÚN NO"));
+            snprintf(g_ms_caption, sizeof g_ms_caption, "%s", progression_ms_name(bit_index(bit)));
             g_ms_lit = on; g_ms_icon = FISH_BADGES[k].icon; g_ms_fish = -1;
         }
     }
@@ -3363,14 +3369,15 @@ void render_notice(const tank_t *t, uint16_t *fb, int stride, int kind, int fish
     const int X = MSP_MODAL_X, W = MSP_MODAL_W, Y = MSP_MODAL_Y, H = MSP_MODAL_H;
     rect_fill(&c, X, Y, W, H, 0x04141a);
     rect_edge(&c, X, Y, W, H, MSP_TEAL); rect_edge(&c, X + 1, Y + 1, W - 2, H - 2, 0x1c2f36);
-    char title[FISH_NAME_MAX + 16] = "LA PECERA", caption[40] = "";
+    char title[FISH_NAME_MAX + 16], caption[40] = "";
+    snprintf(title, sizeof title, "%s", TR("THE TANK", "LA PECERA"));
     const char *caption2 = NULL;                              /* a second line: the title and both move up */
     const icon_t *ic = NULL;
     const fish_t *f = fish >= 0 && fish < t->n_fish ? &t->fish[fish] : NULL;
     if (kind == 5) {                                          /* NOTICE_LIGHTS_OUT (2026-10-03): the first double-tap that turned the light off */
-        snprintf(title, sizeof title, "LUZ APAGADA");
-        snprintf(caption, sizeof caption, "TOCASTE DOS VECES EL VIDRIO");
-        caption2 = "DOBLE TOQUE PARA ENCENDER";
+        snprintf(title, sizeof title, TR("LIGHTS OUT", "LUZ APAGADA"));
+        snprintf(caption, sizeof caption, TR("YOU DOUBLE-TAPPED THE GLASS", "TOCASTE DOS VECES EL VIDRIO"));
+        caption2 = TR("DOUBLE-TAP TO TURN IT ON", "DOBLE TOQUE PARA ENCENDER");
         /* a crescent moon: a disc with a bite out of it */
         const int R = 20, PX = X + W / 2 - 3, PY = Y + 36;
         for (int dy = -R; dy <= R; dy++) for (int dx = -R; dx <= R; dx++) {
@@ -3378,16 +3385,16 @@ void render_notice(const tank_t *t, uint16_t *fb, int stride, int kind, int fish
             if (dx * dx + dy * dy <= R * R && bx * bx + by * by > 17 * 17) rect_fill(&c, PX + dx, PY + dy, 1, 1, MSP_TEAL);
         }
     } else if (kind == 4) {                                   /* NOTICE_UPDATED (2026-09-30): the first boot of a new release */
-        snprintf(title, sizeof title, "ACTUALIZADA");
-        snprintf(caption, sizeof caption, "TU PECERA ESTÁ EN V%s", PT_RELEASE);
+        snprintf(title, sizeof title, TR("UPDATED", "ACTUALIZADA"));
+        snprintf(caption, sizeof caption, TR("YOUR TANK IS NOW V%s", "TU PECERA ESTÁ EN V%s"), PT_RELEASE);
         /* a tick in a ring, teal: the shape says it, not the hue */
         const int R = 22, PX = X + W / 2, PY = Y + 48;
         ring(&c, PX, PY, R, MSP_TEAL); ring(&c, PX, PY, R - 1, MSP_TEAL);
         for (int i = 0; i < 6; i++)  rect_fill(&c, PX - 11 + i, PY + i - 1, 3, 3, MSP_TEAL);
         for (int i = 0; i < 12; i++) rect_fill(&c, PX - 6 + i, PY + 4 - i, 3, 3, MSP_TEAL);
     } else if (kind == 3) {                                   /* NOTICE_LOW_BATTERY */
-        snprintf(title, sizeof title, "BATERÍA BAJA");
-        snprintf(caption, sizeof caption, "POR FAVOR, CARGA LA PECERA");
+        snprintf(title, sizeof title, TR("LOW BATTERY", "BATERÍA BAJA"));
+        snprintf(caption, sizeof caption, TR("PLEASE CHARGE THE TANK", "POR FAVOR, CARGA LA PECERA"));
         /* the pill, large: outline + nub, the last sliver lit red */
         const int PW = 60, PH = 28, PX = X + (W - PW) / 2, PY = Y + 34;
         rect_edge(&c, PX, PY, PW, PH, 0x9fb4b8); rect_edge(&c, PX + 1, PY + 1, PW - 2, PH - 2, 0x9fb4b8);
@@ -3395,12 +3402,13 @@ void render_notice(const tank_t *t, uint16_t *fb, int stride, int kind, int fish
         rect_fill(&c, PX + 4, PY + 4, 7, PH - 8, 0xf25b65);
     } else if (kind == 2) {                                   /* NOTICE_STAGE */
         if (f) { snprintf(title, sizeof title, "%s", f->name);
-                 snprintf(caption, sizeof caption, "AHORA ES UN %s", STAGE_WORDS[f->stage & 3]);
+                 if (pt_lang == LANG_ES) snprintf(caption, sizeof caption, "AHORA ES UN %s", STAGE_WORD(f->stage));
+                 else snprintf(caption, sizeof caption, "IS NOW %s %s", f->stage == STAGE_ADULT || f->stage == STAGE_ELDER ? "AN" : "A", STAGE_WORD(f->stage));
                  render_fish_preview(fb, stride, X + W / 2, Y + 48, f->size * 1.6f, f->color, f->fin, f->accent, t->clock); }
     } else if (kind == 1) {                                   /* NOTICE_TANK_MILESTONE */
         for (int k = 0; k < TANK_BADGE_N; k++) if (TANK_BADGES[k].bit == bit) ic = TANK_BADGES[k].icon;
         int bi = 0; while (bi < 31 && !(bit & (1u << bi))) bi++;
-        snprintf(caption, sizeof caption, "%s", bi < TMS_COUNT ? TMS_NAMES[bi] : "");
+        snprintf(caption, sizeof caption, "%s", progression_tms_name(bi));
         if (!ic && t->n_fish) {                               /* a population milestone: the newest fish */
             const fish_t *n = &t->fish[t->n_fish - 1];
             render_fish_preview(fb, stride, X + W / 2, Y + 48, n->size * 1.6f, n->color, n->fin, n->accent, t->clock);
@@ -3409,7 +3417,7 @@ void render_notice(const tank_t *t, uint16_t *fb, int stride, int kind, int fish
         for (int k = 0; k < 6; k++) if (FISH_BADGES[k].bit == bit) ic = FISH_BADGES[k].icon;
         int bi = 0; while (bi < 31 && !(bit & (1u << bi))) bi++;
         if (f) snprintf(title, sizeof title, "%s", f->name);
-        snprintf(caption, sizeof caption, "%s", bi < MS_FISH_COUNT ? MS_NAMES[bi] : "");
+        snprintf(caption, sizeof caption, "%s", progression_ms_name(bi));
         if (!ic && f) render_fish_preview(fb, stride, X + W / 2, Y + 48, f->size * 1.6f, f->color, f->fin, f->accent, t->clock);
     }
     if (ic) blit_icon_scaled(&c, X + (W - ic->w * 2) / 2, Y + 16 + (32 - ic->w), ic, 2, true);
@@ -3457,7 +3465,7 @@ void render_shop(const tank_t *t, uint16_t *fb, int stride) {
     ctx_t c = ctx_page(fb, stride);
     rect_fill(&c, -PAGE_X, -PAGE_Y, TANK_W, TANK_H, MSP_INK);
     blit_icon(&c, SHP_COIN_X, SHP_COIN_Y, &icon_shop_sand_dollar_64, 255);
-    draw_text(&c, SHP_HEAD_X, SHP_COIN_Y + 6, 2, MSP_TEAL, PAGE_BOWL ? "DÓLARES" : "DÓLARES DE ARENA");   /* (the bowl: the long form would meet the page arrows) */
+    draw_text(&c, SHP_HEAD_X, SHP_COIN_Y + 6, 2, MSP_TEAL, TR("SAND DOLLARS", PAGE_BOWL ? "DÓLARES" : "DÓLARES DE ARENA"));   /* (the bowl: the long form would meet the page arrows) */
     char bal[16]; snprintf(bal, sizeof bal, "%d", (int)t->sd_balance);
     draw_text(&c, SHP_HEAD_X, SHP_COIN_Y + 28, 4, 0xffffff, bal);
     for (int x = 24; x < PAGE_W - 24; x++) px_blend(&c, x, SHP_ROW_Y0 - 10, MSP_DIM, 200);
@@ -3470,16 +3478,16 @@ void render_shop(const tank_t *t, uint16_t *fb, int stride) {
         int top = SHP_ROW_Y0 + (i - g_shp_page * SHP_PER_PAGE) * SHP_ROW_DY;
         bool owned = (t->sd_unlocks & it->bit) != 0, can = t->sd_balance >= it->price;
         if (owned) blit_icon(&c, 32, top, shop_icon(i), 255); else blit_icon_locked(&c, 32, top, shop_icon(i));   /* (the rows are where the bowl is wide: their own column) */
-        draw_text(&c, 76, top + 2, 2, 0xffffff, it->name);
-        if (owned) draw_text(&c, 76, top + 20, 2, MSP_TEAL, "EN LA PECERA");
+        draw_text(&c, 76, top + 2, 2, 0xffffff, sd_item_name(i));
+        if (owned) draw_text(&c, 76, top + 20, 2, MSP_TEAL, TR("IN THE TANK", "EN LA PECERA"));
         else price_tag(&c, 76, top + 20, it->price, can ? MSP_TEAL : MSP_DIM);
-        if (owned)     button(&c, SHP_BTN_X, top, SHP_BTN_W, SHP_BTN_H, MSP_INK, MSP_DIM, "COMPRADO", 2);
-        else if (can) { button(&c, SHP_BTN_X, top, SHP_BTN_W, SHP_BTN_H, MSP_TEAL, MSP_TEAL, "COMPRAR", 2);
-                        draw_text(&c, SHP_BTN_X + (SHP_BTN_W - text_w("COMPRAR", 2)) / 2, top + (SHP_BTN_H - 14) / 2, 2, MSP_INK, "COMPRAR"); }
-        else           button(&c, SHP_BTN_X, top, SHP_BTN_W, SHP_BTN_H, 0x1c2f36, MSP_DIM, "COMPRAR", 2);
+        if (owned)     button(&c, SHP_BTN_X, top, SHP_BTN_W, SHP_BTN_H, MSP_INK, MSP_DIM, TR("IN TANK", "COMPRADO"), 2);
+        else if (can) { button(&c, SHP_BTN_X, top, SHP_BTN_W, SHP_BTN_H, MSP_TEAL, MSP_TEAL, TR("UNLOCK", "COMPRAR"), 2);
+                        draw_text(&c, SHP_BTN_X + (SHP_BTN_W - text_w(TR("UNLOCK", "COMPRAR"), 2)) / 2, top + (SHP_BTN_H - 14) / 2, 2, MSP_INK, TR("UNLOCK", "COMPRAR")); }
+        else           button(&c, SHP_BTN_X, top, SHP_BTN_W, SHP_BTN_H, 0x1c2f36, MSP_DIM, TR("UNLOCK", "COMPRAR"), 2);
     }
-    button(&c, SHP_EARN_X, MSP_CLOSE_Y, SHP_EARN_W, MSP_CLOSE_H, 0x1c2f36, MSP_TEAL, "CÓMO GANAR", 2);
-    button(&c, SHP_CLOSE_X, MSP_CLOSE_Y, MSP_CLOSE_W, MSP_CLOSE_H, 0x1c2f36, MSP_TEAL, "CERRAR", 2);
+    button(&c, SHP_EARN_X, MSP_CLOSE_Y, SHP_EARN_W, MSP_CLOSE_H, 0x1c2f36, MSP_TEAL, TR("HOW TO EARN", "CÓMO GANAR"), 2);
+    button(&c, SHP_CLOSE_X, MSP_CLOSE_Y, MSP_CLOSE_W, MSP_CLOSE_H, 0x1c2f36, MSP_TEAL, TR("CLOSE", "CERRAR"), 2);
     if (g_shp_modal < 0 && !g_shp_earn) return;
     for (int y = 0; y < TANK_H; y++)                          /* the page out of reach under a modal */
         for (int x = 0; x < TANK_W; x++) fb[y * stride + x] = (uint16_t)((fb[y * stride + x] >> 1) & 0x7bef);
@@ -3488,10 +3496,10 @@ void render_shop(const tank_t *t, uint16_t *fb, int stride) {
         const int Y = SHP_EARN_MODAL_Y, H = SHP_EARN_MODAL_H;
         rect_fill(&c, X, Y, W, H, 0x04141a);
         rect_edge(&c, X, Y, W, H, MSP_TEAL); rect_edge(&c, X + 1, Y + 1, W - 2, H - 2, 0x1c2f36);
-        draw_text(&c, X + (W - text_w("CÓMO GANAR", 3)) / 2, Y + 14, 3, 0xffffff, "CÓMO GANAR");
+        draw_text(&c, X + (W - text_w(TR("HOW TO EARN", "CÓMO GANAR"), 3)) / 2, Y + 14, 3, 0xffffff, TR("HOW TO EARN", "CÓMO GANAR"));
         const char *const *lines = progression_sd_earn_lines();
         for (int i = 0; lines[i]; i++) draw_text(&c, X + 14, Y + 50 + i * 24, 2, MSP_TEAL, lines[i]);
-        draw_text(&c, X + (W - text_w("TOCA PARA CERRAR", 2)) / 2, Y + H - 24, 2, 0x3f6a72, "TOCA PARA CERRAR");
+        draw_text(&c, X + (W - text_w(TR("TAP TO CLOSE", "TOCA PARA CERRAR"), 2)) / 2, Y + H - 24, 2, 0x3f6a72, TR("TAP TO CLOSE", "TOCA PARA CERRAR"));
         return;
     }
     const sd_item_t *it = &SD_ITEMS[g_shp_modal];
@@ -3500,29 +3508,30 @@ void render_shop(const tank_t *t, uint16_t *fb, int stride) {
     rect_fill(&c, X, Y, W, H, 0x04141a);
     rect_edge(&c, X, Y, W, H, MSP_TEAL); rect_edge(&c, X + 1, Y + 1, W - 2, H - 2, 0x1c2f36);
     blit_icon_scaled(&c, X + (W - 64) / 2, Y + 14, shop_icon(g_shp_modal), 2, true);
-    draw_text(&c, X + (W - text_w(it->name, 3)) / 2, Y + 88, 3, 0xffffff, it->name);
-    draw_text(&c, X + (W - text_w(it->words, 2)) / 2, Y + 118, 2, MSP_TEAL, it->words);
-    draw_text(&c, X + (W - text_w(it->words2, 2)) / 2, Y + 138, 2, MSP_TEAL, it->words2);
+    const char *nm = sd_item_name(g_shp_modal), *w1 = sd_item_words(g_shp_modal), *w2 = sd_item_words2(g_shp_modal);
+    draw_text(&c, X + (W - text_w(nm, 3)) / 2, Y + 88, 3, 0xffffff, nm);
+    draw_text(&c, X + (W - text_w(w1, 2)) / 2, Y + 118, 2, MSP_TEAL, w1);
+    draw_text(&c, X + (W - text_w(w2, 2)) / 2, Y + 138, 2, MSP_TEAL, w2);
     const int bx = X + (W - MSP_HOW_W) / 2, by = Y + H - 12 - MSP_HOW_H;
     if (owned && tank_decor_placeable(g_shp_modal)) {         /* a placeable piece: MOVE re-opens the placement page, SELL (twice) sells it back */
-        char sell[24]; snprintf(sell, sizeof sell, "SE VENDE POR %d", progression_sell_value(g_shp_modal));
-        draw_text(&c, X + (W - text_w("EN LA PECERA", 2)) / 2, Y + 164, 2, MSP_TEAL, "EN LA PECERA");
+        char sell[24]; snprintf(sell, sizeof sell, TR("SELLS BACK FOR %d", "SE VENDE POR %d"), progression_sell_value(g_shp_modal));
+        draw_text(&c, X + (W - text_w(TR("IN THE TANK", "EN LA PECERA"), 2)) / 2, Y + 164, 2, MSP_TEAL, TR("IN THE TANK", "EN LA PECERA"));
         draw_text(&c, X + (W - text_w(sell, 2)) / 2, Y + 184, 2, MSP_DIM, sell);
-        button(&c, SHP_TWO_X0, by, MSP_HOW_W, MSP_HOW_H, 0x1c2f36, MSP_TEAL, "MOVER", 2);
-        if (g_shp_sell_armed) { snprintf(sell, sizeof sell, "+%d ¿OK?", progression_sell_value(g_shp_modal));
+        button(&c, SHP_TWO_X0, by, MSP_HOW_W, MSP_HOW_H, 0x1c2f36, MSP_TEAL, TR("MOVE", "MOVER"), 2);
+        if (g_shp_sell_armed) { snprintf(sell, sizeof sell, TR("+%d OK?", "+%d ¿OK?"), progression_sell_value(g_shp_modal));
                                 button(&c, SHP_TWO_X1, by, MSP_HOW_W, MSP_HOW_H, MSP_TEAL, MSP_TEAL, sell, 2);
                                 draw_text(&c, SHP_TWO_X1 + (MSP_HOW_W - text_w(sell, 2)) / 2, by + (MSP_HOW_H - 14) / 2, 2, MSP_INK, sell); }
-        else button(&c, SHP_TWO_X1, by, MSP_HOW_W, MSP_HOW_H, 0x1c2f36, MSP_DIM, "VENDER", 2);
-    } else if (owned) draw_text(&c, X + (W - text_w("EN LA PECERA", 2)) / 2, by + 8, 2, MSP_TEAL, "EN LA PECERA");   /* the snail: a permanent resident */
+        else button(&c, SHP_TWO_X1, by, MSP_HOW_W, MSP_HOW_H, 0x1c2f36, MSP_DIM, TR("SELL", "VENDER"), 2);
+    } else if (owned) draw_text(&c, X + (W - text_w(TR("IN THE TANK", "EN LA PECERA"), 2)) / 2, by + 8, 2, MSP_TEAL, TR("IN THE TANK", "EN LA PECERA"));   /* the snail: a permanent resident */
     else {
         char line[32]; snprintf(line, sizeof line, "%d", it->price);
         int pw = 20 + text_w(line, 2);
         price_tag(&c, X + (W - pw) / 2, Y + 164, it->price, can ? 0xffffff : MSP_DIM);
-        if (!can) { snprintf(line, sizeof line, "TIENES %d", (int)t->sd_balance);
+        if (!can) { snprintf(line, sizeof line, TR("YOU HAVE %d", "TIENES %d"), (int)t->sd_balance);
                     draw_text(&c, X + (W - text_w(line, 2)) / 2, Y + 184, 2, MSP_DIM, line); }
-        if (can) { button(&c, bx, by, MSP_HOW_W, MSP_HOW_H, MSP_TEAL, MSP_TEAL, "COMPRAR", 2);
-                   draw_text(&c, bx + (MSP_HOW_W - text_w("COMPRAR", 2)) / 2, by + (MSP_HOW_H - 14) / 2, 2, MSP_INK, "COMPRAR"); }
-        else button(&c, bx, by, MSP_HOW_W, MSP_HOW_H, 0x1c2f36, MSP_DIM, "COMPRAR", 2);
+        if (can) { button(&c, bx, by, MSP_HOW_W, MSP_HOW_H, MSP_TEAL, MSP_TEAL, TR("UNLOCK", "COMPRAR"), 2);
+                   draw_text(&c, bx + (MSP_HOW_W - text_w(TR("UNLOCK", "COMPRAR"), 2)) / 2, by + (MSP_HOW_H - 14) / 2, 2, MSP_INK, TR("UNLOCK", "COMPRAR")); }
+        else button(&c, bx, by, MSP_HOW_W, MSP_HOW_H, 0x1c2f36, MSP_DIM, TR("UNLOCK", "COMPRAR"), 2);
     }
 }
 int render_shop_tap(const tank_t *t, float x, float y) {
@@ -3595,10 +3604,12 @@ void render_sd_toast(const tank_t *t, uint16_t *fb, int stride) {
 /* (the page's numbers, SET_*: render.h) */
 static const char *const SET_BRIGHT[3] = { "30%", "60%", "100%" };
 static const int         SET_BRIGHT_PCT[3] = { 30, 60, 100 };
-static const char *const SET_VOLUME[3] = { "MUDO", "BAJO", "NORMAL" };
+static const char *const SET_VOLUME_EN[3] = { "OFF", "QUIET", "NORMAL" },
+                         *const SET_VOLUME_ES[3] = { "MUDO", "BAJO", "NORMAL" };
 static const char *const SET_LIGHT[2]  = { "MANUAL", "AUTO" };   /* the default first */
 #if TANK_WORN
-static const char *const SET_SCREEN[2] = { "NORMAL", "GIRADA" };   /* the default first */
+static const char *const SET_SCREEN_EN[2] = { "NORMAL", "TURNED" },
+                         *const SET_SCREEN_ES[2] = { "NORMAL", "GIRADA" };   /* the default first */
 #endif
 
 static void set_row(ctx_t *c, int row_y, const char *label, const char *const names[], int n, int chosen) {
@@ -3621,32 +3632,32 @@ static void set_chevron(ctx_t *c, int cx, int y, bool up, uint32_t rgb) {   /* t
 void render_settings(const tank_t *t, uint16_t *fb, int stride, int bright_pct, int volume) {
     ctx_t c = ctx_page(fb, stride);
     rect_fill(&c, -PAGE_X, -PAGE_Y, TANK_W, TANK_H, MSP_INK);
-    draw_text(&c, (PAGE_W - text_w("AJUSTES", 3)) / 2, SET_TITLE_Y, 3, 0xffffff, "AJUSTES");
+    draw_text(&c, (PAGE_W - text_w(TR("SETTINGS", "AJUSTES"), 3)) / 2, SET_TITLE_Y, 3, 0xffffff, TR("SETTINGS", "AJUSTES"));
     int bi = bright_pct <= 30 ? 0 : bright_pct <= 60 ? 1 : 2;
-    set_row(&c, SET_ROW1_Y, "BRILLO", SET_BRIGHT, 3, bi);
-    set_row(&c, SET_ROW2_Y, "VOLUMEN", SET_VOLUME, 3, volume < 0 ? 0 : volume > 2 ? 2 : volume);
-    draw_text(&c, SET_LABEL_X, SET_NOTE_Y, 2, MSP_DIM, "DE NOCHE LOS PECES CALLAN");
-    set_row(&c, SET_ROW3_Y, "APAGAR LUZ", SET_LIGHT, 2, t->light_auto ? 1 : 0);
+    set_row(&c, SET_ROW1_Y, TR("BRIGHTNESS", "BRILLO"), SET_BRIGHT, 3, bi);
+    set_row(&c, SET_ROW2_Y, TR("VOLUME", "VOLUMEN"), (pt_lang == LANG_ES ? SET_VOLUME_ES : SET_VOLUME_EN), 3, volume < 0 ? 0 : volume > 2 ? 2 : volume);
+    draw_text(&c, SET_LABEL_X, SET_NOTE_Y, 2, MSP_DIM, TR("FISH ARE QUIET AT NIGHT", "DE NOCHE LOS PECES CALLAN"));
+    set_row(&c, SET_ROW3_Y, TR("LIGHTS OUT", "APAGAR LUZ"), SET_LIGHT, 2, t->light_auto ? 1 : 0);
     if (t->light_auto) {
         /* AUTO: AFTER [ n ] SEC, the number with its chevrons */
         char num[8]; snprintf(num, sizeof num, "%d", t->light_idle_s);
         int nw = text_w(num, SET_NUM_SCALE), nx = SET_NUM_X + SET_NUM_BOX_W - nw, cx = SET_NUM_X + SET_NUM_BOX_W / 2;
-        draw_text(&c, SET_LABEL_X, SET_AFTER_Y, 2, MSP_TEAL, "TRAS");
+        draw_text(&c, SET_LABEL_X, SET_AFTER_Y, 2, MSP_TEAL, TR("AFTER", "TRAS"));
         draw_text(&c, nx, SET_NUM_Y, SET_NUM_SCALE, 0xffffff, num);
         rect_fill(&c, SET_NUM_X, SET_NUM_Y + SET_NUM_H + 6, SET_NUM_BOX_W, 3, 0x3f6a72);
         set_chevron(&c, cx, SET_NUM_Y - SET_NUM_GAP, true, MSP_TEAL);
         set_chevron(&c, cx, SET_NUM_Y + SET_NUM_H + SET_NUM_GAP + 3, false, MSP_TEAL);
-        draw_text(&c, SET_NUM_X + SET_NUM_BOX_W + 10, SET_AFTER_Y, 2, MSP_TEAL, "SEG");
+        draw_text(&c, SET_NUM_X + SET_NUM_BOX_W + 10, SET_AFTER_Y, 2, MSP_TEAL, TR("SEC", "SEG"));
     } else {
         /* MANUAL: how to work the light instead */
-        draw_text(&c, SET_LABEL_X, SET_NUM_Y - 8, 2, MSP_TEAL, "DOBLE TOQUE EN EL VIDRIO");
-        draw_text(&c, SET_LABEL_X, SET_NUM_Y + 14, 2, MSP_TEAL, "ENCIENDE O APAGA LA LUZ");
+        draw_text(&c, SET_LABEL_X, SET_NUM_Y - 8, 2, MSP_TEAL, TR("DOUBLE-TAP THE GLASS TO", "DOBLE TOQUE EN EL VIDRIO"));
+        draw_text(&c, SET_LABEL_X, SET_NUM_Y + 14, 2, MSP_TEAL, TR("TURN THE LIGHT ON OR OFF", "ENCIENDE O APAGA LA LUZ"));
     }
 #if TANK_WORN
     /* SCREEN (2026-10-02): the way up of a watch worn either way round - TURNED
        for buttons toward the elbow. The picture turns as the finger lifts. */
-    set_row(&c, SET_ROW4_Y, "PANTALLA", SET_SCREEN, 2, t->screen_turned ? 1 : 0);
-    draw_text(&c, SET_LABEL_X, SET_NOTE4_Y, 2, MSP_DIM, "¿LO LLEVAS AL REVÉS?");
+    set_row(&c, SET_ROW4_Y, TR("SCREEN", "PANTALLA"), (pt_lang == LANG_ES ? SET_SCREEN_ES : SET_SCREEN_EN), 2, t->screen_turned ? 1 : 0);
+    draw_text(&c, SET_LABEL_X, SET_NOTE4_Y, 2, MSP_DIM, TR("WORN THE OTHER WAY AROUND?", "¿LO LLEVAS AL REVÉS?"));
 #endif
     /* the firmware version, hugging the bottom left of the frame (6 px up,
        on the labels' x; the bezel's curve is clear there), small (8 px) and
@@ -3662,10 +3673,16 @@ void render_settings(const tank_t *t, uint16_t *fb, int stride, int bright_pct, 
 #else
     draw_text_8px(&c, SET_LABEL_X + (PAGE_BOWL ? 96 : 0), PAGE_H - 8 - 6, MSP_DIM, ver);
 #endif
-    button(&c, SET_CLOSE_X, SET_FOOT_Y, MSP_CLOSE_W, MSP_CLOSE_H, 0x1c2f36, MSP_TEAL, "CERRAR", 2);
+    button(&c, SET_CLOSE_X, SET_FOOT_Y, MSP_CLOSE_W, MSP_CLOSE_H, 0x1c2f36, MSP_TEAL, TR("CLOSE", "CERRAR"), 2);
     /* UPDATES (2026-09-30, docs/OTA.md): bottom left, the same size as CLOSE,
        clear of the seconds selector's down chevron (x 160..288) */
-    button(&c, SET_UPD_X, SET_FOOT_Y, SET_UPD_W, MSP_CLOSE_H, 0x1c2f36, MSP_TEAL, "ACTUALIZA", 2);
+    button(&c, SET_UPD_X, SET_FOOT_Y, SET_UPD_W, MSP_CLOSE_H, 0x1c2f36, MSP_TEAL, TR("UPDATES", "ACTUALIZA"), 2);
+    /* the language (2026-10-04): EN | ES on the title's line, the one in use lit */
+    for (int i = 0; i < LANG_N; i++) {
+        bool on = t->lang == i;
+        button(&c, SET_LANG_X + i * (SET_LANG_SEG_W + 4), SET_LANG_Y, SET_LANG_SEG_W, SET_LANG_H,
+               on ? MSP_TEAL : 0x1c2f36, on ? MSP_TEAL : 0x3f6a72, i == LANG_ES ? "ES" : "EN", 2);
+    }
 }
 static int set_segment(float x, int n) {
     if (x < SET_SEG_X - 10) return -1;
@@ -3678,6 +3695,9 @@ static int set_segment(float x, int n) {
 enum { SET_HIT_IDLE_NUM = 100, SET_HIT_IDLE_UP, SET_HIT_IDLE_DOWN };
 int render_settings_tap(float x, float y, int *value) {
     x -= PAGE_X; y -= PAGE_Y;                    /* the page's own coordinates */
+    if (x >= SET_LANG_X - 8 && x < SET_LANG_X + SET_LANG_W + 8 && y < SET_LANG_Y + SET_LANG_H) {   /* above the brightness row's band */
+        *value = x < SET_LANG_X + SET_LANG_SEG_W + 2 ? LANG_EN : LANG_ES; return SET_TAP_LANG;
+    }
     if (x >= SET_CLOSE_X - 8 && y >= SET_FOOT_Y - 4) return SET_TAP_CLOSE;
     if (x < SET_UPD_X + SET_UPD_W + 8 && y >= SET_FOOT_Y - 4) return SET_TAP_UPDATES;   /* before the number's band below the chevron */
 #if TANK_WORN
@@ -3728,6 +3748,9 @@ int render_settings_touch(tank_t *t, float x, float y, bool down, int *value) {
                 } else if ((h == SET_HIT_IDLE_UP || h == SET_HIT_IDLE_DOWN) && t->light_auto) {
                     set_step(t, h == SET_HIT_IDLE_UP ? +1 : -1); progression_settings_changed();
                     r = SET_TAP_IDLE; *value = t->light_idle_s;
+                } else if (h == SET_TAP_LANG) {                    /* the language: the tank's, and every string's from the next frame */
+                    if (t->lang != v) { t->lang = (uint8_t)v; pt_lang = (uint8_t)v; progression_settings_changed(); }
+                    r = SET_TAP_LANG; *value = v;
                 } else if (h == SET_TAP_SCREEN) {                  /* the way up: NORMAL (0, the default) / TURNED (1) */
                     if ((v != 0) != t->screen_turned) { tank_screen_set(t, v != 0); progression_settings_changed(); }
                     r = SET_TAP_SCREEN; *value = v;

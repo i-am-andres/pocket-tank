@@ -647,19 +647,19 @@ static void tank_task(void *arg) {
           if (r >= SHOP_TAP_SELL) {                                     /* sold back: the refund, the piece gone, the row for sale again */
               int item = r - SHOP_TAP_SELL;
               if (progression_sell(&tank, item)) { audio_port_play(SND_CONFIRM, AUDIO_PITCH_ONE);
-                  ESP_LOGI(TAG, "shop: %s sold back for %d, balance %d", SD_ITEMS[item].name, progression_sell_value(item), (int)tank.sd_balance); }
+                  ESP_LOGI(TAG, "shop: %s sold back for %d, balance %d", sd_item_name(item), progression_sell_value(item), (int)tank.sd_balance); }
           } else if (r >= SHOP_TAP_MOVE) {                              /* a piece already in the tank: place it again */
               int item = r - SHOP_TAP_MOVE;
               touch_port_show_shop(false); setup_begin_place(&tank, item);
-              ESP_LOGI(TAG, "shop: MOVE %s - placement page up (drag, DEPTH, DONE)", SD_ITEMS[item].name);
+              ESP_LOGI(TAG, "shop: MOVE %s - placement page up (drag, DEPTH, DONE)", sd_item_name(item));
           } else if (r >= SHOP_TAP_BUY) {
               int item = r - SHOP_TAP_BUY;
               if (progression_buy(&tank, item)) { audio_port_play(SND_CONFIRM, AUDIO_PITCH_ONE);
-                  ESP_LOGI(TAG, "shop: %s unlocked, %d sand dollars left", SD_ITEMS[item].name, (int)tank.sd_balance);
+                  ESP_LOGI(TAG, "shop: %s unlocked, %d sand dollars left", sd_item_name(item), (int)tank.sd_balance);
                   if (tank_decor_placeable(item)) {                     /* a placeable piece: the page opens over the live tank */
                       touch_port_show_shop(false); setup_begin_place(&tank, item);
-                      ESP_LOGI(TAG, "shop: placement page up for the %s", SD_ITEMS[item].name); } }
-              else ESP_LOGI(TAG, "shop: %s refused (balance %d, price %d)", SD_ITEMS[item].name, (int)tank.sd_balance, SD_ITEMS[item].price); } }
+                      ESP_LOGI(TAG, "shop: placement page up for the %s", sd_item_name(item)); } }
+              else ESP_LOGI(TAG, "shop: %s refused (balance %d, price %d)", sd_item_name(item), (int)tank.sd_balance, SD_ITEMS[item].price); } }
         brightness_apply(tank.night);
         { static int64_t last_bat; if (now - last_bat > 5LL * 60 * 1000000) {   /* battery log: awake sample every 5 min */
             batlog_add(battery_pct(), battery_port_vbat_mv(), display_port_brightness(), false, last_bat ? "" : "boot"); last_bat = now; } }
