@@ -39,13 +39,12 @@ bool battery_port_init(i2c_master_bus_handle_t bus) {
      * cell on this board. 0.5C = 100 mA (code 4; codes 0-8 are 25 mA steps)
      * charges it in ~2.5 h and is kind to it; 200 mA (code 8) is the 1C
      * alternative. CV stays at the default 4.2 V (code 3).
-     * The 2.16 (2026-10-04): no cell of its own - the keeper fits one, its
-     * size unknown - and the tank awake draws ~75 mA, so 100 mA left ~25 for
-     * the cell: 1% per 5 minutes, "full in 9 h" on the glass. Waveshare's own
-     * example for the board charges at 400 mA; 300 (code 9 - past 200 the
-     * steps are 100 mA) is three times the tank's and still mild for a small
-     * cell. */
-    const int code = board_is_sq216() ? 9 : 4, ma = code <= 8 ? code * 25 : 300 + (code - 9) * 100;
+     * The 2.16 (2026-10-04): the tank awake draws ~75 mA, so 100 mA left ~25
+     * for the cell: 1% per 5 minutes, "full in 9 h" on the glass. Its cell is
+     * Waveshare's 1000 mAh, and their own example for the board charges at
+     * 400 mA (code 10 - past 200 the steps are 100 mA): 0.4C, kind to it, and
+     * with the tank's draw still inside a plain USB port's 500 mA. */
+    const int code = board_is_sq216() ? 10 : 4, ma = code <= 8 ? code * 25 : 300 + (code - 9) * 100;
     uint8_t icc;
     if (rd(0x62, &icc)) {
         uint8_t wr[2] = { 0x62, (uint8_t)((icc & 0xE0) | code) };
