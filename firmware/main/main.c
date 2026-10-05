@@ -602,6 +602,10 @@ static void tank_task(void *arg) {
         inv = tank_screen_turned(&tank);  /* worn on a wrist the live flip never runs (the arm swings through every angle):
                                              the way up is the keeper's setting, or what AUTO learned from the taps (tank.h) */
 #endif
+        if (board_is_sq216()) {           /* the square turns all four ways, in the panel; the 180 is one of them */
+            int rot = imu_port_rotation();
+            display_port_set_rotation(rot); touch_port_set_rotation(rot); inv = false;
+        }
         display_port_set_inverted(inv);   /* per-frame, so a flip lands between flushes */
         touch_port_set_inverted(inv);
         touch_port_poll(&tank);

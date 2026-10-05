@@ -317,6 +317,9 @@ static void run(tank_t *t, char *line) {
         progression_slept(t, h * 3600.0f);      /* growth + the full-night badge, as a real wake would */
         ESP_LOGI(TAG, "slept %.1f h", h);
         show_state(t);
+    } else if (!strcmp(c, "rot")) {             /* the 2.16: rot <0-3> holds the picture so many quarter turns clockwise; rot auto = the IMU's */
+        if (argc > 1) imu_port_force_rotation(!strcmp(argv[1], "auto") ? -1 : atoi(argv[1]));
+        ESP_LOGI(TAG, "rot: %d quarter turn(s) clockwise", imu_port_rotation());
     } else if (!strcmp(c, "imu")) {             /* a short trace of raw polls: is the table really still? */
         int n = argc > 1 ? atoi(argv[1]) : 8; if (n < 1) n = 1; if (n > 40) n = 40;
         for (int i = 0; i < n; i++) {               /* (the console runs in the tank task: poll here, the task is blocked) */

@@ -68,6 +68,8 @@ void touch_port_set_bias(int px) { s_bias_y = px; }
 int  touch_port_bias(void) { return s_bias_y; }
 
 void touch_port_set_inverted(bool inverted) { s_inverted = inverted; }
+static int s_rot;                                 /* the 2.16: the picture's quarter turns (display_port_set_rotation) */
+void touch_port_set_rotation(int quarter) { s_rot = quarter & 3; }
 extern i2c_master_bus_handle_t board_i2c_bus(void);
 extern bool board_is_v2(void);
 
@@ -309,13 +311,26 @@ bool touch_port_init(void) {
 static void cal_point(float rx, float ry, float *tx, float *ty);
 /* an upright raw report -> the finger's point on the picture as shown: calibrated, then turned with the picture */
 static void cal_view(float rx, float ry, float *tx, float *ty) {
+    if (board_is_sq216()) {                           /* the square turns all four ways (2026-10-04): the panel's stretch undone
+                                                         upright, the turn, THEN the finger's low landing in the picture's own down */
+        const float M = TANK_W - 1;
+        float px = (rx + CAL_S_X_OFF) / CAL_S_X_GAIN, py = (ry + CAL_S_Y_OFF) / CAL_S_Y_GAIN, x, y;
+        switch (s_rot) {                              /* picture turned a quarter clockwise: tank (x, y) is panel (M - y, x) */
+        case 1:  x = py;     y = M - px; break;
+        case 2:  x = M - px; y = M - py; break;
+        case 3:  x = M - py; y = px;     break;
+        default: x = px;     y = py;     break;
+        }
+        y -= s_bias_y;
+        *tx = x < 0 ? 0 : x > M ? M : x; *ty = y < 0 ? 0 : y > TANK_H - 1 ? TANK_H - 1 : y;
+        return;
+    }
     cal_point(rx, ry, tx, ty);
     if (s_inverted) { *tx = TANK_W - 1 - *tx; *ty = TANK_H - 1 - *ty; }
 }
 static void cal_point(float rx, float ry, float *tx, float *ty) {                 /* a raw tank-space report -> where the finger is */
     ry -= s_inverted ? -s_bias_y : s_bias_y;          /* the finger's own low landing is the viewer's "down": turned, that is the panel's up */
-    if (board_is_sq216()) { rx = (rx + CAL_S_X_OFF) / CAL_S_X_GAIN; ry = (ry + CAL_S_Y_OFF) / CAL_S_Y_GAIN; }
-    else if (board_is_round()) ry = (ry + CAL_R_Y_OFF) / CAL_R_Y_GAIN;
+    if (board_is_round()) ry = (ry + CAL_R_Y_OFF) / CAL_R_Y_GAIN;
     else if (board_is_watch()) { rx = (rx + CAL_W_X_OFF) / CAL_W_X_GAIN; ry = (ry + CAL_W_Y_OFF) / CAL_W_Y_GAIN; }
     else if (board_is_v2()) { rx = (rx + CAL_X_OFF) / CAL_X_GAIN; ry = (ry + CAL_Y_OFF) / CAL_Y_GAIN; }
     if (rx < 0) rx = 0;

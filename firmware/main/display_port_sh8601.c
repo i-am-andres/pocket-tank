@@ -78,6 +78,13 @@ static bool s_round_clear;                      /* the glass around the window i
 static uint8_t s_fw[4][4][4];                   /* FIT: [row in group][px in group] -> weights /32 of a[k] a[k+1] b[k] b[k+1] */
 
 void display_port_set_inverted(bool inverted) { s_inverted = inverted; }
+/* the 2.16's square turns all four ways (2026-10-04), in the panel itself:
+ * MADCTL per quarter turn clockwise, set between frames. 60 is upright (the
+ * init's), A0 its half turn; 00 / C0 the sideways pair (SQ_MAD_CW below). */
+#define SQ_MAD_CW  0x00                         /* the quarter turn clockwise (bench, 2026-10-04); C0 the other */
+static const uint8_t SQ_MAD[4] = { 0x60, SQ_MAD_CW, 0xA0, SQ_MAD_CW ^ 0xC0 };
+static int s_rot_want, s_rot_set;               /* asked / in the panel (-1: the init's own, re-sent after a wake) */
+void display_port_set_rotation(int quarter) { s_rot_want = quarter & 3; }
 bool board_is_round(void) { return s_round; }
 bool board_is_watch(void) { return s_watch; }
 bool board_is_sq216(void) { return s_sq; }
@@ -412,6 +419,7 @@ void display_port_wake(void) {
     display_port_set_brightness(s_brightness);      /* init_cmds put it back at 255 */
     esp_lcd_panel_disp_on_off(s_panel, true);
     s_round_clear = true;                           /* a reset panel's memory is not black */
+    s_rot_set = 0;                                  /* the init put MADCTL back upright */
     s_border_clear = s_fx > 0 || s_fy > 0;
 }
 
@@ -572,6 +580,12 @@ static void native_flush(const uint16_t *fb) {
 #endif
 void display_port_flush(const uint16_t *fb) {
     if (!s_panel) return;
+    if (s_sq && s_rot_want != s_rot_set) {             /* both stripes home (no DMA in flight), then the turn */
+        stripe_take(); stripe_take();
+        dcs(0x36, &SQ_MAD[s_rot_want], 1);
+        xSemaphoreGive(s_stripe_free); xSemaphoreGive(s_stripe_free);
+        s_rot_set = s_rot_want;
+    }
     if (s_round) { round_flush(fb); return; }
 #ifdef TANK_WATCH
     native_flush(fb); return;
