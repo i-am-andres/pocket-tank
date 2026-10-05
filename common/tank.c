@@ -178,9 +178,9 @@ const uint32_t CORAL_PAL[CORAL_N] = { 0xff7a1e, 0xf2698f, 0xd24bb4, 0x8a5be0, 0x
  * orange coral, purple tubes, a cyan brain; LAGOON pink / blue / lime;
  * DUSK magenta / teal / gold */
 const cluster_scheme_t CLUSTER_SCHEMES[CLUSTER_SCHEME_N] = {
-    { "REEF",   0xff6a2a, 0x9b4fe0, 0x5fd8e8 },
-    { "LAGOON", 0xf25c8a, 0x3f8ff0, 0xb9f04a },
-    { "DUSK",   0xd24bb4, 0x2ec9b4, 0xf2c23a },
+    { "ARRECIFE", 0xff6a2a, 0x9b4fe0, 0x5fd8e8 },
+    { "LAGUNA", 0xf25c8a, 0x3f8ff0, 0xb9f04a },
+    { "OCASO",  0xd24bb4, 0x2ec9b4, 0xf2c23a },
 };
 
 void tank_set_name(tank_t *t, int slot, const char *name) {

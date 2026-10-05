@@ -332,7 +332,7 @@ static int selftest_pop(void) {
             || met != 2 || !req[3].met || !req[4].met) { printf("FAIL: a fresh pair's gates: %d met, glass %d, grass %d\n", met, req[3].met, req[4].met); return 1; }
         printf("selftest-pop: fry checklist: %d gates (%s / %s / %s / %s / %s)\n", n, req[0].progress, req[1].progress, req[2].progress, req[3].progress, req[4].progress);
         tank.player_feedings = 12; progression_next_fry(&tank, req, &staged);
-        if (!req[1].met || strcmp(req[1].progress, "DONE") || req[1].frac != 1.0f) { printf("FAIL: 12 feedings should meet the MEALS gate (%s)\n", req[1].progress); return 1; }
+        if (!req[1].met || strcmp(req[1].progress, "LISTO") || req[1].frac != 1.0f) { printf("FAIL: 12 feedings should meet the MEALS gate (%s)\n", req[1].progress); return 1; }
         tank.player_feedings = 3; progression_next_fry(&tank, req, &staged);
         if (req[1].met || req[1].frac < 0.24f || req[1].frac > 0.26f) { printf("FAIL: 3 of 12 feedings should be a quarter (%.2f)\n", req[1].frac); return 1; }
         tank.player_feedings = 0;
@@ -353,11 +353,11 @@ static int selftest_pop(void) {
         tank_grow_algae(&tank, 2000);                                       /* an untended tank: up to the growth cap */
         progression_next_fry(&tank, req, &staged);
         printf("selftest-pop: fry checklist GLASS at the cap: %s / %s (bar %.2f)\n", req[3].words, req[3].progress, req[3].frac);
-        if (req[3].met || req[3].frac > 0.05f || strcmp(req[3].title, "GLASS")) { printf("FAIL: a tank at the cap should have GLASS owed with an empty bar (%d, %.2f)\n", req[3].met, req[3].frac); return 1; }
+        if (req[3].met || req[3].frac > 0.05f || strcmp(req[3].title, "VIDRIO")) { printf("FAIL: a tank at the cap should have GLASS owed with an empty bar (%d, %.2f)\n", req[3].met, req[3].frac); return 1; }
         for (int i = 0; i < ALGAE_CELLS; i++) tank.algae[i] = 0;
         tank.algae[0] = tank.algae[1] = 200;                                /* a little film is fine */
         progression_next_fry(&tank, req, &staged);
-        if (!req[3].met || req[3].frac != 1.0f || strcmp(req[3].progress, "CURRENTLY CLEAN ENOUGH")) { printf("FAIL: two filmed cells should pass GLASS (%s)\n", req[3].progress); return 1; }
+        if (!req[3].met || req[3].frac != 1.0f || strcmp(req[3].progress, "YA ESTÁ BASTANTE LIMPIO")) { printf("FAIL: two filmed cells should pass GLASS (%s)\n", req[3].progress); return 1; }
         for (int i = 0; i < ALGAE_CELLS; i++) tank.algae[i] = 0;
     }
     progression_time_scale = 600;                 /* 10 minutes of tended time per second */
@@ -1341,12 +1341,12 @@ static int selftest_update(void) {
     /* three boards, one release (2026-10-02): a manifest for another board is never offered, and an
        image whose board marker is another board's stops at its first sector - no TRY AGAIN either way */
     setenv("POCKET_TANK_FAKE_UPDATE", "otherboard", 1); update_begin(50, false); ADV(2); ADV(2);
-    EXPECT(update_page() == UPD_PG_MESSAGE && !strcmp(update_message_title(), "WRONG BOARD") && HIT(bl, ya) == 0 && HIT(bm, ya) == 0,
+    EXPECT(update_page() == UPD_PG_MESSAGE && !strcmp(update_message_title(), "PLACA INCORRECTA") && HIT(bl, ya) == 0 && HIT(bm, ya) == 0,
            "another board's manifest: page %d, %s", update_page(), update_message_title());
     setenv("POCKET_TANK_FAKE_UPDATE", "boardimage", 1); update_begin(50, false); ADV(2); ADV(2);
     EXPECT(update_page() == UPD_PG_OFFER, "a right-board manifest was not offered (page %d)", update_page());
     TAP(bl, yb); ADV(1); ADV(1);
-    EXPECT(update_page() == UPD_PG_MESSAGE && !strcmp(update_message_title(), "WRONG BOARD") && HIT(bl, ya) == 0 && HIT(bm, ya) == 0,
+    EXPECT(update_page() == UPD_PG_MESSAGE && !strcmp(update_message_title(), "PLACA INCORRECTA") && HIT(bl, ya) == 0 && HIT(bm, ya) == 0,
            "another board's image: page %d, %s", update_page(), update_message_title());
     printf("selftest-update: board %s: another board's manifest -> WRONG BOARD, never offered; another board's image -> WRONG BOARD at its first sector\n", PT_BOARD);
     unsetenv("POCKET_TANK_FAKE_UPDATE");
@@ -3884,7 +3884,7 @@ static int selftest_card(const char *prefix) {
         fry_req_t req[FRY_REQ_MAX]; bool staged; int n = progression_next_fry(&tank, req, &staged), feed = -1, met = 0;
         for (int i = 0; i < n; i++) { if (req[i].kind == FRY_REQ_FEED) feed = i; met += req[i].met; }
         if (feed < 0 || req[feed].met || met != n - 1 || staged) CARD_FAIL("after a sale only MEALS should be owed (%d of %d met, staged %d)", met, n, staged);
-        char want[28]; snprintf(want, sizeof want, "%d OF %d SO FAR", 150, 150 + SELL_FRY_MEALS);
+        char want[40]; snprintf(want, sizeof want, "%d DE %d HASTA AHORA", 150, 150 + SELL_FRY_MEALS);
         if (strcmp(req[feed].progress, want)) CARD_FAIL("the MEALS gate reads '%s', want '%s'", req[feed].progress, want);
     }
     for (int i = 0; i < 60 * 90; i++) {
