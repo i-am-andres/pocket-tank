@@ -17,6 +17,7 @@
  * (display_port_panel_to_tank) and everything after that is the same.
  * The WATCH (2.06, 2026-10-02) has the FT3168 of the 1.8's V1 board, its
  * reset on a GPIO. Its own build is a portrait tank: panel px = tank px. */
+#include "sd_backup.h"
 #include "touch_port.h"
 #include "display_port.h"
 #include "update.h"
@@ -443,6 +444,7 @@ static void stroke_point(bool landed, float tx, float ty, float *dx, float *dy) 
     if (*dy > TANK_H - 1) *dy = TANK_H - 1;
 }
 static bool s_upd; static int s_upd_act;                 /* the UPDATES page (2026-09-30) */
+static bool s_bak, s_bak_restore;                        /* the 2.16's SD BACKUPS page, from the updates page (2026-10-04) */
 bool touch_port_read_raw(float *x, float *y) {
     uint16_t px[1], py[1];
     if (!panel_read(px, py)) return false;
@@ -480,8 +482,14 @@ void touch_port_poll(tank_t *t) {
     if (s_upd && !s_cf && !su) {                             /* the UPDATES page: CHECK (main restarts), FORGET, CLOSE */
         int r = updates_page_touch(tx, ty, touched);
         if (r == UPD_TAP_CLOSE) { s_upd = false; s_set = true; s_back = true; ESP_LOGI(TAG, "updates page: CLOSE -> settings"); }
+        else if (r == UPD_TAP_BACKUPS) { s_upd = false; s_bak = true; s_back = true; sd_backup_page_open(); }
         else if (r == UPD_TAP_CHECK) { s_upd_act = r; ESP_LOGI(TAG, "updates page: CHECK FOR UPDATES"); }
         else if (r == UPD_TAP_FORGET) ESP_LOGI(TAG, "updates page: network forgotten");
+    }
+    if (s_bak && !s_cf && !su) {                             /* the SD BACKUPS page: a copy, its question, CLOSE */
+        int r = sd_backup_page_touch(tx, ty, touched);
+        if (r == SDP_CLOSE) { s_bak = false; s_upd = true; s_back = true; }
+        else if (r == SDP_RESTORE) s_bak_restore = true;     /* main saves the tank, then the page restores and restarts */
     }
     if (su && !s_cf) {
         bool birth = setup_is_birth(), rename = setup_is_rename(); int who = setup_fish(), place = setup_item();
@@ -496,7 +504,7 @@ void touch_port_poll(tank_t *t) {
     }
     { int rf = setup_take_renamed();                         /* a rename closed (2026-10-01): back to the milestones page, the fish's card up */
       if (rf >= 0) { s_ms = true; s_set = false; s_shop = false; s_sel = -1; render_milestones_show_fish(t, rf); } }
-    bool modal = s_ms || s_set || s_shop || s_cf || su || s_bat || s_upd;   /* a page or a prompt owns the glass */
+    bool modal = s_ms || s_set || s_shop || s_cf || su || s_bat || s_upd || s_bak;   /* a page or a prompt owns the glass */
     if (touched) {                                           /* stroke = wipe/slash, reaching the glass (stroke_point above) */
         float dx, dy; stroke_point(!s_down, tx, ty, &dx, &dy);
         if (!s_down) { s_dx0 = s_dx1 = dx; s_frames = 0; s_raw_px = x[0]; s_raw_py = y[0]; }
@@ -544,7 +552,7 @@ void touch_port_poll(tank_t *t) {
         if (held_us < 350000 && dx * dx + dy * dy < 24 * 24) {
             if (notice_current()) {                                 /* (the lights-out notice lets its tap through: notice.h) */
                 bool took = notice_dismiss(); ESP_LOGI(TAG, "tap closed the announcement"); if (took) goto released; }
-            if (s_set || s_upd || s_back) { s_back = false; goto released; }   /* the settings / updates page had the glass (their touch calls above) */
+            if (s_set || s_upd || s_bak || s_back) { s_back = false; goto released; }   /* the settings / updates page had the glass (their touch calls above) */
             if (s_shop) {                                           /* the shop: a row's modal, UNLOCK, HOW TO EARN, CLOSE */
                 int r = render_shop_tap(t, s_px, s_py);
                 ESP_LOGI(TAG, "shop tap at %.0f,%.0f -> %s", s_px, s_py, r == SHOP_TAP_CLOSE ? "CLOSE" : r >= SHOP_TAP_SELL ? "SELL" : r >= SHOP_TAP_MOVE ? "MOVE" : r >= SHOP_TAP_BUY ? "UNLOCK" : r == SHOP_TAP_KEPT ? "modal" : "nothing");
@@ -648,7 +656,9 @@ int touch_port_selected(void) { return s_sel; }
 bool touch_port_milestones(void) { return s_ms; }
 void touch_port_show_milestones(bool on) { if (s_ms && !on) render_milestones_leave(); s_ms = on; }
 void touch_port_dismiss(void) { s_sel = -1; if (s_ms) render_milestones_leave(); if (s_shop) render_shop_leave(); s_ms = false; s_set = false; s_shop = false; s_bat = false; s_upd = false; }
-bool touch_port_updates(void) { return s_upd; }
+bool touch_port_updates(void) { return s_upd || s_bak; }   /* (the backups page counts as one: every "a page is up" check holds) */
+bool touch_port_backups(void) { return s_bak; }
+bool touch_port_take_backup_restore(void) { bool r = s_bak_restore; s_bak_restore = false; return r; }
 void touch_port_show_updates(bool on) { s_upd = on; if (on) { s_ms = false; s_set = false; s_shop = false; s_sel = -1; s_bat = false; } }
 int  touch_port_take_update(void) { int r = s_upd_act; s_upd_act = 0; return r; }
 

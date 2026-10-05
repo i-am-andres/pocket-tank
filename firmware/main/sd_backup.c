@@ -158,3 +158,161 @@ void sd_backup_poll(int64_t now_us) {
     next = now_us + EVERY_US;
     sd_backup_now(now_us < EVERY_US ? "boot" : "every 3 h");
 }
+
+/* ---- the SD BACKUPS page (2026-10-04) ---- */
+#include "render.h"
+#include "lang.h"
+#include "tank_events.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_system.h"
+#define UNDO      DIR_ "/UNDO.BIN"
+#define C_INK     0x031015
+#define C_INNER   0x1c2f36
+#define C_EDGE    0x9fd8e2
+#define C_DIM     0x2a3f45
+#define C_TEXT    0xffffff
+#define C_CAPT    0x9fd8e2
+#define C_GO      0x155e58
+#define C_GO_E    0x38dcc7
+#define SDP_MAX   24
+#define SDP_ROWS  5
+#define SDP_ROW_Y 76
+#define SDP_ROW_DY 44
+#define SDP_ROW_H 36
+#define SDP_X     32
+#define SDP_W     384
+#define SDP_FOOT_Y (PAGE_BOWL ? 318 : 312)
+#define SDP_CLOSE_X (PAGE_BOWL ? 296 : 324)
+#define SDP_ARROW_W 56
+#define SDP_YES_X  236
+#define SDP_NO_X   72
+#define SDP_ASK_Y  244
+#define SDP_ASK_W  140
+#define SDP_ASK_H  44
+typedef struct { char file[13]; int kind; int y, m, d, hh, mm; } sdp_entry_t;   /* kind: 0 latest, 1 before restoring, 2 a day */
+static sdp_entry_t s_ent[SDP_MAX];
+static int s_n, s_top, s_ask = -1;      /* the entries, the first row shown, the one being confirmed (-1 none) */
+static bool s_card_ok;
+
+static int ent_cmp(const void *a, const void *b) {   /* the latest, then "before restoring", then the days newest first */
+    const sdp_entry_t *x = a, *y = b;
+    if (x->kind != y->kind) return x->kind - y->kind;
+    return strcmp(y->file, x->file);
+}
+void sd_backup_page_open(void) {
+    s_n = 0; s_top = 0; s_ask = -1; s_card_ok = mount();
+    if (!s_card_ok) return;
+    DIR *d = opendir(DIR_); struct dirent *e;
+    while (d && (e = readdir(d)) && s_n < SDP_MAX) {
+        sdp_entry_t t = { 0 }; int kind = -1;
+        if (!strcmp(e->d_name, "SAVE.BIN")) kind = 0;
+        else if (!strcmp(e->d_name, "UNDO.BIN")) kind = 1;
+        else if (e->d_name[0] == 'S' && strlen(e->d_name) == 11 && sscanf(e->d_name + 1, "%2d%2d%2d", &t.y, &t.m, &t.d) == 3) kind = 2;
+        if (kind < 0) continue;
+        t.kind = kind; strncpy(t.file, e->d_name, 12);
+        if (kind < 2) {                         /* the file's own time (FAT keeps the RTC's at the write) */
+            char p[300]; struct stat st; snprintf(p, sizeof p, DIR_ "/%s", e->d_name);
+            if (stat(p, &st) == 0 && st.st_mtime > 1700000000) {
+                struct tm tm; time_t mt = st.st_mtime; localtime_r(&mt, &tm);
+                t.y = tm.tm_year % 100; t.m = tm.tm_mon + 1; t.d = tm.tm_mday; t.hh = tm.tm_hour; t.mm = tm.tm_min;
+            } else t.y = -1;
+        }
+        s_ent[s_n++] = t;
+    }
+    if (d) closedir(d);
+    unmount();
+    qsort(s_ent, s_n, sizeof s_ent[0], ent_cmp);
+    ESP_LOGI(TAG, "backups page: %d copies", s_n);
+}
+static void ent_label(const sdp_entry_t *e, char *out, size_t n) {
+    char when[24] = "";
+    if (e->kind == 2) snprintf(when, sizeof when, "%02d/%02d/%02d", e->d, e->m, e->y);
+    else if (e->y >= 0) snprintf(when, sizeof when, "%02d/%02d %02d:%02d", e->d, e->m, e->hh, e->mm);
+    if (e->kind == 0) snprintf(out, n, TR("LATEST  %s", "LA ÚLTIMA  %s"), when);
+    else if (e->kind == 1) snprintf(out, n, TR("BEFORE RESTORING  %s", "ANTES DE RESTAURAR %s"), when);
+    else snprintf(out, n, "%s", when);
+}
+void sd_backup_page_render(uint16_t *fb, int stride) {
+    render_rect(fb, stride, -PAGE_X, -PAGE_Y, TANK_W, TANK_H, C_INK);
+    if (s_ask >= 0) {                           /* the question */
+        const char *q = TR("GO BACK TO THIS COPY?", "¿VOLVER A ESTA COPIA?");
+        render_text(fb, stride, (PAGE_W - render_text_w(q, 3)) / 2, 40, 3, C_TEXT, q);
+        char lab[48]; ent_label(&s_ent[s_ask], lab, sizeof lab);
+        render_text(fb, stride, (PAGE_W - render_text_w(lab, 2)) / 2, 100, 2, C_CAPT, lab);
+        const char *l1 = TR("THE TANK AS IT IS NOW", "LA PECERA DE AHORA SE GUARDA");
+        const char *l2 = TR("IS KEPT AS BEFORE RESTORING", "COMO ANTES DE RESTAURAR");
+        render_text(fb, stride, (PAGE_W - render_text_w(l1, 2)) / 2, 150, 2, 0x7fa8b0, l1);
+        render_text(fb, stride, (PAGE_W - render_text_w(l2, 2)) / 2, 172, 2, 0x7fa8b0, l2);
+        render_button(fb, stride, SDP_NO_X, SDP_ASK_Y, SDP_ASK_W, SDP_ASK_H, C_INNER, C_EDGE, "NO", 3);
+        render_button(fb, stride, SDP_YES_X, SDP_ASK_Y, SDP_ASK_W, SDP_ASK_H, C_GO, C_GO_E, TR("YES", "SÍ"), 3);
+        return;
+    }
+    const char *t = TR("SD BACKUPS", "COPIAS EN LA SD");
+    render_text(fb, stride, (PAGE_W - render_text_w(t, 3)) / 2, 14, 3, C_TEXT, t);
+    const char *sub = !s_card_ok ? TR("NO CARD IN THE SLOT", "NO HAY TARJETA") : !s_n ? TR("NO COPIES YET", "AÚN NO HAY COPIAS")
+                                 : TR("TAP ONE TO GO BACK TO IT", "TOCA UNA PARA VOLVER A ELLA");
+    render_text(fb, stride, (PAGE_W - render_text_w(sub, 2)) / 2, 48, 2, 0x7fa8b0, sub);
+    for (int r = 0; r < SDP_ROWS && s_top + r < s_n; r++) {
+        char lab[48]; ent_label(&s_ent[s_top + r], lab, sizeof lab);
+        render_button(fb, stride, SDP_X, SDP_ROW_Y + r * SDP_ROW_DY, SDP_W, SDP_ROW_H, C_INNER, r + s_top == 0 ? C_EDGE : C_DIM, lab, 2);
+    }
+    if (s_n > SDP_ROWS) {                       /* the pages of the list */
+        render_button(fb, stride, SDP_X, SDP_FOOT_Y, SDP_ARROW_W, 30, C_INNER, s_top > 0 ? C_EDGE : C_DIM, "<", 2);
+        render_button(fb, stride, SDP_X + SDP_ARROW_W + 8, SDP_FOOT_Y, SDP_ARROW_W, 30, C_INNER, s_top + SDP_ROWS < s_n ? C_EDGE : C_DIM, ">", 2);
+    }
+    render_button(fb, stride, SDP_CLOSE_X, SDP_FOOT_Y, 92, 30, C_INNER, C_EDGE, TR("CLOSE", "CERRAR"), 2);
+}
+static int hit(float x, float y) {              /* 100+i a row, 1 close, 2 yes, 3 no, 4 prev, 5 next */
+    x -= PAGE_X; y -= PAGE_Y;
+    if (s_ask >= 0) {
+        if (y >= SDP_ASK_Y - 10 && y < SDP_ASK_Y + SDP_ASK_H + 14) {
+            if (x >= SDP_YES_X - 10 && x < SDP_YES_X + SDP_ASK_W + 10) return 2;
+            if (x >= SDP_NO_X - 10 && x < SDP_NO_X + SDP_ASK_W + 10) return 3;
+        }
+        return 0;
+    }
+    if (y >= SDP_FOOT_Y - 6) {
+        if (x >= SDP_CLOSE_X - 8) return 1;
+        if (s_n > SDP_ROWS && x < SDP_X + SDP_ARROW_W + 4) return 4;
+        if (s_n > SDP_ROWS && x < SDP_X + 2 * SDP_ARROW_W + 16) return 5;
+        return 0;
+    }
+    for (int r = 0; r < SDP_ROWS && s_top + r < s_n; r++) {
+        int ry = SDP_ROW_Y + r * SDP_ROW_DY;
+        if (y >= ry - 4 && y < ry + SDP_ROW_H + 4 && x >= SDP_X - 8 && x < SDP_X + SDP_W + 8) return 100 + s_top + r;
+    }
+    return 0;
+}
+int sd_backup_page_touch(float x, float y, bool down) {
+    static bool s_down; static float s_px, s_py, s_lx, s_ly; static int s_hit;
+    int r = SDP_NONE;
+    if (down) { s_lx = x; s_ly = y; }
+    if (down && !s_down) { s_px = x; s_py = y; s_hit = hit(x, y); }
+    else if (!down && s_down) {
+        int h = hit(s_lx, s_ly); float dx = s_lx - s_px, dy = s_ly - s_py;
+        if (h && h == s_hit && dx * dx + dy * dy < 24 * 24) {
+            if (h >= 100) { s_ask = h - 100; tank_emit(TEV_WHEEL_TICK, -1); }
+            else if (h == 1) r = SDP_CLOSE;
+            else if (h == 2) r = SDP_RESTORE;
+            else if (h == 3) s_ask = -1;
+            else if (h == 4 && s_top > 0) s_top -= SDP_ROWS;
+            else if (h == 5 && s_top + SDP_ROWS < s_n) s_top += SDP_ROWS;
+        }
+    }
+    s_down = down;
+    return r;
+}
+void sd_backup_page_restore(void) {
+    if (s_ask < 0 || s_ask >= s_n || !mount()) return;
+    uint8_t *buf = malloc(SAVE_MAX);
+    size_t len = buf ? nvs_blob(buf, SAVE_MAX) : 0;
+    bool kept = len && strcmp(s_ent[s_ask].file, "UNDO.BIN") && write_file(UNDO, buf, len);   /* the tank as it is: one step back */
+    free(buf);
+    char p[300]; snprintf(p, sizeof p, DIR_ "/%s", s_ent[s_ask].file);
+    bool ok = restore_from(p);
+    unmount();
+    ESP_LOGW(TAG, "backups page: %s restored%s - restarting into it", s_ent[s_ask].file, kept ? " (the tank before it kept as UNDO.BIN)" : "");
+    if (ok) { vTaskDelay(pdMS_TO_TICKS(150)); esp_restart(); }
+    s_ask = -1;
+}

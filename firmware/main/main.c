@@ -639,6 +639,10 @@ static void tank_task(void *arg) {
         sleep_button_poll(now);
         feed_button_poll(now);
         sd_backup_poll(now);
+        if (touch_port_take_backup_restore()) {   /* a copy chosen on the SD BACKUPS page: the tank saved (so UNDO.BIN is it), then the copy, then a restart */
+            progression_save(&tank);
+            sd_backup_page_restore();
+        }
         pwr_key_poll(now);
         imu_port_poll(now);
         if (imu_port_moving()) audio_port_prewarm();   /* in a hand: the codec stays warm (docs/AUDIO.md) */
@@ -728,6 +732,9 @@ static void tank_task(void *arg) {
                 sel = -1;
             } else if (touch_port_settings()) {  /* settings page: brightness + volume */
                 render_settings(&tank, fb[cur], TANK_W, brightness_level(), audio_port_volume());
+                sel = -1;
+            } else if (touch_port_backups()) {   /* the 2.16's SD BACKUPS page (from the updates page) */
+                sd_backup_page_render(fb[cur], TANK_W);
                 sel = -1;
             } else if (touch_port_updates()) {   /* the updates page (2026-09-30): version, network, CHECK FOR UPDATES */
                 render_updates_page(fb[cur], TANK_W);
@@ -912,6 +919,7 @@ void app_main(void) {
        internal heap to itself. Back from it, the normal boot goes on. */
     render_clock_us = esp_timer_get_time;    /* per-stage frame profiling in the display log */
     display_port_init();
+    update_backups_button = board_is_sq216();   /* the updates page offers the microSD's copies (sd_backup.h) */
     if (pwr_sensed()) {                      /* the PWR key's sense line: a plain input (a deep-sleep wake left it an RTC pad) */
         rtc_gpio_deinit(PWR_SENSE);
         gpio_config_t sense = { .pin_bit_mask = 1ULL << PWR_SENSE, .mode = GPIO_MODE_INPUT };

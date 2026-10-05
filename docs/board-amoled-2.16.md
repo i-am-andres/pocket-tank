@@ -73,8 +73,11 @@ grid is 24 x 24 cells of 20 px (576, inside the 644 the save keeps), fronds
   tank in NVS (a `--full` flash, an erased chip) brings the latest copy back
   before the tank loads - never over a saved tank, so a reset stays a reset.
   The card (FAT, SDMMC 1-bit: CLK 2, CMD 1, D0 3) is mounted only while a
-  copy is written. Director: `sd` (the copies), `sd backup`,
-  `sd restore [Syymmdd.BIN]` (then a restart). Bench, 2026-10-04: NVS erased
+  copy is written. On the glass: settings -> UPDATES -> SD BACKUPS lists
+  them newest first (the latest, BEFORE RESTORING, the days); a tap and a
+  YES restarts the tank into that copy, the tank as it was kept first as
+  PTANK/UNDO.BIN ("before restoring") - one step back is always there.
+  Director: `sd` (the copies), `sd backup`, `sd restore [Syymmdd.BIN]`. Bench, 2026-10-04: NVS erased
   under a running tank, the next boot came back with the same fish.
   Brightness and volume live in NVS on their own and are not on the card.
 - **Memory**: the frames are 460 KB each (PSRAM); the internal heap runs at

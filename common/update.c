@@ -155,6 +155,7 @@ static bool in_box(float x, float y, int bx, int by, int bw, int bh, int slop) {
  * 1. THE UPDATES PAGE in the tank (no radio)
  * ==================================================================== */
 
+bool update_backups_button;
 void render_updates_page(uint16_t *fb, int stride) {
     page_bg(fb, stride);
     text_c(fb, stride, 14, 3, C_TEXT, TR("UPDATES", "ACTUALIZACIONES"));
@@ -173,6 +174,8 @@ void render_updates_page(uint16_t *fb, int stride) {
     render_button(fb, stride, UPD_CHECK_X, UPD_CHECK_Y, UPD_CHECK_W, UPD_CHECK_H, C_GO, C_GO_E, TR("CHECK FOR UPDATES", "BUSCAR ACTUALIZACIONES"), 2);
     if (net_port_creds_get(ssid, pass))
         render_button(fb, stride, UPD_FORGET_X, UPD_FORGET_Y, UPD_FORGET_W, UPD_FORGET_H, C_INNER, C_DIM, TR("FORGET NETWORK", "OLVIDAR RED"), 2);
+    if (update_backups_button)
+        render_button(fb, stride, UPD_BAK_X, UPD_FORGET_Y, UPD_BAK_W, UPD_FORGET_H, C_INNER, C_EDGE, TR("SD BACKUPS", "COPIAS SD"), 2);
     render_button(fb, stride, UPD_CLOSE_X, UPD_CLOSE_Y, UPD_CLOSE_W, UPD_CLOSE_H, C_INNER, C_EDGE, TR("CLOSE", "CERRAR"), 2);
 }
 int updates_page_tap(float x, float y) {
@@ -180,6 +183,7 @@ int updates_page_tap(float x, float y) {
     if (x >= UPD_CLOSE_X - 8 && y >= UPD_CLOSE_Y - 4) return UPD_TAP_CLOSE;
     if (in_box(x, y, UPD_CHECK_X, UPD_CHECK_Y, UPD_CHECK_W, UPD_CHECK_H, 8)) return UPD_TAP_CHECK;
     char ssid[NET_SSID_MAX + 1], pass[NET_PASS_MAX + 1];
+    if (update_backups_button && in_box(x, y, UPD_BAK_X, UPD_FORGET_Y, UPD_BAK_W, UPD_FORGET_H, 6)) return UPD_TAP_BACKUPS;
     if (in_box(x, y, UPD_FORGET_X, UPD_FORGET_Y, UPD_FORGET_W, UPD_FORGET_H, 8) && net_port_creds_get(ssid, pass)) return UPD_TAP_FORGET;
     return UPD_TAP_NONE;
 }
