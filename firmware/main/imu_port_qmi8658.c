@@ -101,7 +101,10 @@ bool imu_port_init(i2c_master_bus_handle_t bus) {
         s_dev = NULL; return false;
     }
     if (!imu_reset_config()) { ESP_LOGW(TAG, "QMI8658 config failed"); s_dev = NULL; return false; }
-    if (board_is_round()) { s_up_axis = 0; s_up_sign = 1; }
+    /* the 2.16, 2026-10-04: upright is keys on top, and held so the picture stood on its head
+       with +Y - so -Y (the silkscreen's arrow is the back's view); the 1.75C's +X never moves there */
+    if (board_is_sq216()) { s_up_axis = 1; s_up_sign = -1; }
+    else if (board_is_round()) { s_up_axis = 0; s_up_sign = 1; }
     /* the watch, 2026-10-02 (propped on the desk, the tank right side up): g = [13100 900 -9400] -
        the panel's long axis is X, its foot +X. Nothing reads it: on a wrist the live flip never
        runs (main.c), the way up is settings SCREEN (tank.h) */

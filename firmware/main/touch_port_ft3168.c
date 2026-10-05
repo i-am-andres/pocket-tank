@@ -78,11 +78,16 @@ extern bool board_is_v2(void);
  * x = b1:b3.hi, y = b2:b3.lo, 12 bits each, in panel px - mirrored on both
  * axes against the picture (Waveshare's BSP sets mirror_x and mirror_y). */
 static i2c_master_dev_handle_t s_cst;
+/* the 2.16's CST9220 is the same protocol on another reset pin; its glass is
+ * turned against the picture instead of mirrored (the BSP: MADCTL A0 on the
+ * panel, swap_xy + mirror_y on the touch - and this port turns both 180
+ * degrees, MADCTL 60, so the keys sit on top) */
+#define CST_RST ((gpio_num_t)(board_is_sq216() ? S_PIN_TP_RST : R_PIN_TP_RST))
 static bool cst9217_init(void) {
-    gpio_config_t rst = { .pin_bit_mask = 1ULL << R_PIN_TP_RST, .mode = GPIO_MODE_OUTPUT };
-    gpio_config(&rst); gpio_sleep_sel_dis(R_PIN_TP_RST);
-    gpio_set_level(R_PIN_TP_RST, 0); vTaskDelay(pdMS_TO_TICKS(10));
-    gpio_set_level(R_PIN_TP_RST, 1); vTaskDelay(pdMS_TO_TICKS(50));
+    gpio_config_t rst = { .pin_bit_mask = 1ULL << CST_RST, .mode = GPIO_MODE_OUTPUT };
+    gpio_config(&rst); gpio_sleep_sel_dis(CST_RST);
+    gpio_set_level(CST_RST, 0); vTaskDelay(pdMS_TO_TICKS(10));
+    gpio_set_level(CST_RST, 1); vTaskDelay(pdMS_TO_TICKS(50));
     if (i2c_master_probe(board_i2c_bus(), I2C_ADDR_CST9217, 50) != ESP_OK) { ESP_LOGW(TAG, "no CST9217"); return false; }
     i2c_device_config_t cfg = { .dev_addr_length = I2C_ADDR_BIT_LEN_7, .device_address = I2C_ADDR_CST9217, .scl_speed_hz = 400000,
                                 .flags.disable_ack_check = 1 };   /* it NACKs a read now and then while it scans: not an error, and not a log line each */
@@ -97,7 +102,7 @@ static bool cst9217_init(void) {
  * reset brings it back: the wake is a reboot, and cst9217_init pulses it. */
 bool touch_port_deep_sleep(void) {
     if (!s_cst) return false;
-    gpio_set_level(R_PIN_TP_RST, 1); vTaskDelay(pdMS_TO_TICKS(150));
+    gpio_set_level(CST_RST, 1); vTaskDelay(pdMS_TO_TICKS(150));
     static const uint8_t open[2] = { 0xD1, 0x1E }, dbg[2] = { 0xD1, 0x01 }, slp[2] = { 0xD1, 0x05 }, where[2] = { 0x00, 0x02 };
     uint8_t r[4] = { 0 };
     bool open_ok = false;
@@ -112,7 +117,7 @@ bool touch_port_deep_sleep(void) {
     bool ok = i2c_master_transmit(s_cst, slp, 2, 20) == ESP_OK && open_ok && dbg_ok;
     ESP_LOGI(TAG, "CST9217 sleep: command mode %s, debug mode %s -> %s", open_ok ? "ok" : "NO ECHO", dbg_ok ? "ok" : "NO ECHO",
              ok ? "asleep, reset held high" : "not confirmed: back into reset for the night");
-    if (!ok) gpio_set_level(R_PIN_TP_RST, 0);
+    if (!ok) gpio_set_level(CST_RST, 0);
     return ok;
 }
 /* A press is one press: the chip answers some reads mid-touch with nothing (no
@@ -149,9 +154,11 @@ static bool cst9217_read(uint16_t *x, uint16_t *y) {
     }
     if (finger) {
         int rx = (d[1] << 4) | (d[3] >> 4), ry = (d[2] << 4) | (d[3] & 0x0F);
-        if (rx > R_PANEL - 1) rx = R_PANEL - 1;
-        if (ry > R_PANEL - 1) ry = R_PANEL - 1;
-        lx = (uint16_t)(R_PANEL - 1 - rx); ly = (uint16_t)(R_PANEL - 1 - ry);
+        const int pn = board_round_panel();
+        if (rx > pn - 1) rx = pn - 1;
+        if (ry > pn - 1) ry = pn - 1;
+        if (board_is_sq216()) { lx = (uint16_t)ry; ly = (uint16_t)(pn - 1 - rx); }   /* the BSP's (479 - y, x), turned 180 degrees */
+        else { lx = (uint16_t)(pn - 1 - rx); ly = (uint16_t)(pn - 1 - ry); }
         if (!down) { s_cst_gaps = s_cst_said = s_cst_back = s_cst_maxgap_ms = 0; said_in = false;
                      s_cst_again_ms = lift_us ? (int)((now - lift_us) / 1000) : -1; }
         else {
@@ -293,7 +300,8 @@ static void cal_view(float rx, float ry, float *tx, float *ty) {
 }
 static void cal_point(float rx, float ry, float *tx, float *ty) {                 /* a raw tank-space report -> where the finger is */
     ry -= s_inverted ? -s_bias_y : s_bias_y;          /* the finger's own low landing is the viewer's "down": turned, that is the panel's up */
-    if (board_is_round()) ry = (ry + CAL_R_Y_OFF) / CAL_R_Y_GAIN;
+    if (board_is_sq216()) { }                       /* not measured yet: as the panel says */
+    else if (board_is_round()) ry = (ry + CAL_R_Y_OFF) / CAL_R_Y_GAIN;
     else if (board_is_watch()) { rx = (rx + CAL_W_X_OFF) / CAL_W_X_GAIN; ry = (ry + CAL_W_Y_OFF) / CAL_W_Y_GAIN; }
     else if (board_is_v2()) { rx = (rx + CAL_X_OFF) / CAL_X_GAIN; ry = (ry + CAL_Y_OFF) / CAL_Y_GAIN; }
     if (rx < 0) rx = 0;
